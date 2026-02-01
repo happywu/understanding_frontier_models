@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Frontier Models</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        .hero-stat {
+            text-align: center;
+        }
+        .hero-stat .number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(to right, #93c5fd, #6ee7b7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-stat .label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+        .model-card-large {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            color: var(--text);
+            display: block;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .model-card-large:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+            text-decoration: none;
+        }
+        .model-card-header {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%);
+            padding: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .model-card-header h3 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+        .model-card-header .org {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        .model-card-body {
+            padding: 2rem;
+        }
+        .model-card-body p {
+            color: var(--text-dim);
+            margin: 0 0 1.5rem 0;
+            line-height: 1.7;
+        }
+        .model-highlights {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .highlight-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(37, 99, 235, 0.06);
+            border-radius: 0.5rem;
+            border: 1px solid rgba(37, 99, 235, 0.1);
+        }
+        .highlight-item .value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .highlight-item .label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+        .model-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .model-tag {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            border: 1px solid rgba(37, 99, 235, 0.2);
+        }
+        .model-tag.secondary {
+            background: rgba(5, 150, 105, 0.1);
+            color: var(--secondary);
+            border: 1px solid rgba(5, 150, 105, 0.2);
+        }
+        .coming-soon {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .coming-soon .model-card-header::after {
+            content: 'Coming Soon';
+            display: inline-block;
+            background: var(--accent);
+            color: #000;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            margin-left: 1rem;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Understanding Frontier Models</h1>
+    <p class="subtitle">Interactive visualizations and technical deep-dives explaining the architectures and innovations behind state-of-the-art AI models</p>
+    <div class="hero-stats">
+        <div class="hero-stat">
+            <div class="number">1</div>
+            <div class="label">Models Documented</div>
+        </div>
+        <div class="hero-stat">
+            <div class="number">30+</div>
+            <div class="label">Technical Concepts</div>
+        </div>
+        <div class="hero-stat">
+            <div class="number">7</div>
+            <div class="label">Interactive Sections</div>
+        </div>
+    </div>
+</header>
+
+<section>
+    <h2>Featured Model Deep Dives</h2>
+    <p>Explore comprehensive technical breakdowns of leading AI models with interactive diagrams, benchmark comparisons, and architectural explanations.</p>
+
+    <a href="models/kimi-k25.html" class="model-card-large">
+        <div class="model-card-header">
+            <h3>Kimi K2.5</h3>
+            <div class="org">Moonshot AI &middot; January 2026 &middot; Open Source (MIT)</div>
+        </div>
+        <div class="model-card-body">
+            <p>A native multimodal agentic model emphasizing joint optimization of text and vision. Introduces the <strong>Agent Swarm</strong> framework for parallel agent orchestration, achieving 4.5x latency reduction over single-agent baselines. Features MoonViT-3D vision encoder with unified image/video processing.</p>
+
+            <div class="model-highlights">
+                <div class="highlight-item">
+                    <div class="value">1.04T</div>
+                    <div class="label">Total Params</div>
+                </div>
+                <div class="highlight-item">
+                    <div class="value">32B</div>
+                    <div class="label">Active Params</div>
+                </div>
+                <div class="highlight-item">
+                    <div class="value">256K</div>
+                    <div class="label">Context</div>
+                </div>
+                <div class="highlight-item">
+                    <div class="value">15T</div>
+                    <div class="label">Training Tokens</div>
+                </div>
+                <div class="highlight-item">
+                    <div class="value">78.4%</div>
+                    <div class="label">BrowseComp</div>
+                </div>
+                <div class="highlight-item">
+                    <div class="value">96.1%</div>
+                    <div class="label">AIME 2025</div>
+                </div>
+            </div>
+
+            <div class="model-tags">
+                <span class="model-tag">Multimodal</span>
+                <span class="model-tag">MoE (384 experts)</span>
+                <span class="model-tag secondary">Agent Swarm</span>
+                <span class="model-tag secondary">PARL</span>
+                <span class="model-tag">Vision-Language</span>
+                <span class="model-tag">Computer Use</span>
+            </div>
+        </div>
+    </a>
+
+    <!-- Placeholder for future models -->
+    <div class="model-card-large coming-soon" style="margin-top: 1.5rem;">
+        <div class="model-card-header">
+            <h3>More Models</h3>
+            <div class="org">Additional frontier model deep-dives in development</div>
+        </div>
+        <div class="model-card-body">
+            <p>Future additions may include: Claude, GPT series, Gemini, DeepSeek, Llama, and other significant open and closed-source models with notable architectural innovations.</p>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h2>What You'll Learn</h2>
+    <div class="grid">
+        <div class="card">
+            <h3>Model Architecture</h3>
+            <p>Detailed breakdowns of model components: attention mechanisms, MoE routing, vision encoders, and how they interconnect.</p>
+        </div>
+        <div class="card">
+            <h3>Training Methodology</h3>
+            <p>Pre-training strategies, data composition, optimizer innovations, and the multi-stage pipelines that produce frontier capabilities.</p>
+        </div>
+        <div class="card">
+            <h3>Post-Training</h3>
+            <p>SFT data synthesis, reinforcement learning algorithms, reward modeling, and techniques for capability elicitation.</p>
+        </div>
+        <div class="card">
+            <h3>Novel Techniques</h3>
+            <p>Key innovations that differentiate each model: early fusion, agent swarms, token-efficient RL, and training infrastructure.</p>
+        </div>
+        <div class="card">
+            <h3>Benchmark Analysis</h3>
+            <p>Comprehensive comparisons across reasoning, coding, vision, agentic, and computer-use benchmarks with context.</p>
+        </div>
+        <div class="card">
+            <h3>Interactive Visualizations</h3>
+            <p>Animated diagrams, training curves, and interactive elements that make complex concepts accessible.</p>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h2>About This Project</h2>
+    <p>This site provides educational visualizations based on published technical reports and papers. Each model page includes architecture diagrams, training insights, benchmark comparisons, and interactive demonstrations to help researchers, engineers, and enthusiasts understand the technical innovations in frontier AI.</p>
+    <p style="color: var(--text-dim); margin-top: 1rem;">All content is derived from official technical reports, papers, and model cards. Links to original sources are provided on each model page.</p>
+</section>
+
+<footer>
+    <p>Educational content based on published technical reports and papers.</p>
+</footer>
+
+</body>
+</html>

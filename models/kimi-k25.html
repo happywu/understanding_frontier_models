@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kimi K2.5: Visual Agentic Intelligence - Technical Deep Dive</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ]
+        });"></script>
+    <style>
+        /* Page-specific styles */
+        .executive-summary {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(5, 150, 105, 0.03) 100%);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .key-contributions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .contribution-card {
+            background: var(--card-bg);
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.25rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .contribution-card h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--primary);
+            font-size: 0.95rem;
+        }
+
+        .contribution-card p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+
+        .stat-pill {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1.25rem;
+            border-radius: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-pill .value {
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-pill .label {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .headline-benchmarks {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+        }
+
+        .benchmark-pill {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .benchmark-pill .score {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+
+        .benchmark-pill .name {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+
+        /* Collapsible sections */
+        .collapsible-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s ease;
+        }
+
+        .section-header:hover {
+            background: rgba(37, 99, 235, 0.03);
+        }
+
+        .section-header-content {
+            flex: 1;
+        }
+
+        .section-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-header h3 .icon {
+            font-size: 1.25rem;
+        }
+
+        .section-preview {
+            margin: 0.25rem 0 0 0;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .section-toggle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--code-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            transition: transform 0.3s ease, background 0.2s ease;
+            flex-shrink: 0;
+            margin-left: 1rem;
+        }
+
+        .collapsible-section.expanded .section-toggle {
+            transform: rotate(180deg);
+            background: var(--primary);
+            color: white;
+        }
+
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .collapsible-section.expanded .section-content {
+            max-height: none;
+        }
+
+        .section-content-inner {
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Content styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-box {
+            background: var(--code-bg);
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .stat-box .value {
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: var(--primary);
+            display: block;
+        }
+
+        .stat-box .label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .comparison-table th, .comparison-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-table th {
+            background: var(--code-bg);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .comparison-table tr:hover {
+            background: rgba(37, 99, 235, 0.03);
+        }
+
+        .comparison-table .highlight {
+            color: var(--secondary);
+            font-weight: bold;
+        }
+
+        .insight-box {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
+            border-left: 4px solid var(--secondary);
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0 0.5rem 0.5rem 0;
+        }
+
+        .insight-box strong {
+            color: var(--secondary);
+        }
+
+        .formula-box {
+            background: var(--code-bg);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .formula-box .katex-display {
+            margin: 0.5rem 0;
+        }
+
+        .formula-box .katex {
+            font-size: 1.1rem;
+        }
+
+        .arch-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+            align-items: center;
+            background: var(--code-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            position: relative;
+            border: 1px solid var(--border);
+            margin: 1.5rem 0;
+        }
+
+        .module {
+            background: var(--card-bg);
+            border: 2px solid var(--primary);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            width: 220px;
+            text-align: center;
+            position: relative;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .module:hover {
+            transform: translateY(-3px);
+        }
+
+        .module h4 {
+            color: var(--primary);
+            margin: 0 0 0.5rem 0;
+            font-size: 1rem;
+        }
+
+        .module p {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin: 0;
+        }
+
+        .connector {
+            width: 40px;
+            height: 3px;
+            background: #94a3b8;
+            position: relative;
+        }
+
+        .connector::after {
+            content: '>';
+            position: absolute;
+            right: -8px;
+            top: -10px;
+            font-size: 1.25rem;
+            color: #94a3b8;
+        }
+
+        .badge {
+            background: var(--secondary);
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-weight: bold;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            border-top: 3px solid var(--primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .card h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--primary);
+            font-size: 1rem;
+        }
+
+        .card p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .arch-diagram {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border);
+        }
+
+        .arch-diagram h4 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .pipeline-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--code-bg);
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        .pipeline-stage {
+            background: var(--card-bg);
+            border: 2px solid var(--primary);
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .pipeline-stage.active {
+            border-color: var(--secondary);
+        }
+
+        .pipeline-stage .stage-name {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+
+        .pipeline-stage.active .stage-name {
+            color: var(--secondary);
+        }
+
+        .pipeline-stage .stage-detail {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+
+        .pipeline-arrow {
+            font-size: 1.25rem;
+            color: #94a3b8;
+        }
+
+        .reward-components {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .reward-component {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            border-top: 3px solid var(--accent);
+        }
+
+        .reward-component h5 {
+            margin: 0 0 0.5rem 0;
+            color: var(--accent);
+            font-size: 0.9rem;
+        }
+
+        .reward-component p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .toggle-phases {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .phase-box {
+            background: var(--card-bg);
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .phase-box h5 {
+            margin: 0 0 0.75rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .phase-box.phase0 {
+            border-left: 4px solid var(--accent);
+        }
+
+        .phase-box.phase0 h5 {
+            color: var(--accent);
+        }
+
+        .phase-box.phase1 {
+            border-left: 4px solid var(--secondary);
+        }
+
+        .phase-box.phase1 h5 {
+            color: var(--secondary);
+        }
+
+        .phase-box p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .benchmark-category {
+            margin-bottom: 1.5rem;
+        }
+
+        .benchmark-category h4 {
+            color: var(--accent);
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        /* Swarm animation */
+        .swarm-stage {
+            background: var(--code-bg);
+            height: 350px;
+            border-radius: 1rem;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin: 1.5rem 0;
+        }
+
+        .agent-node {
+            width: 60px;
+            height: 60px;
+            background: var(--card-bg);
+            border: 2px solid;
+            border-radius: 50%;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: bold;
+            z-index: 2;
+            transition: all 0.5s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .orchestrator {
+            border-color: var(--accent);
+            color: var(--accent);
+            top: 50%;
+            left: 10%;
+            transform: translate(0, -50%);
+            width: 80px;
+            height: 80px;
+            z-index: 3;
+        }
+
+        .sub-agent {
+            border-color: var(--secondary);
+            color: var(--secondary);
+            opacity: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--secondary);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .toggle-phases {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline-flow {
+                flex-direction: column;
+            }
+
+            .pipeline-arrow {
+                transform: rotate(90deg);
+            }
+
+            .arch-container {
+                flex-direction: column;
+            }
+
+            .connector {
+                width: 3px;
+                height: 30px;
+            }
+
+            .connector::after {
+                content: 'v';
+                right: -6px;
+                top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="../index.html" class="nav-link" style="color: rgba(255,255,255,0.8);">&larr; Back to Models</a>
+    <h1>Kimi K2.5</h1>
+    <p class="subtitle">Visual Agentic Intelligence by Moonshot AI</p>
+</header>
+
+<!-- Executive Summary -->
+<section>
+    <div class="executive-summary">
+        <h2 style="margin-top: 0; border-left: none; padding-left: 0;">Key Contributions</h2>
+
+        <div class="key-contributions">
+            <div class="contribution-card">
+                <h4>Native Multimodal Architecture</h4>
+                <p>Joint pre-training from scratch with 10:90 vision-text ratio avoids "dip-and-recover" seen in late fusion approaches.</p>
+            </div>
+            <div class="contribution-card">
+                <h4>MoonViT-3D Vision Encoder</h4>
+                <p>Unified image/video processing with NaViT patch packing and 4x temporal compression for efficient long video understanding.</p>
+            </div>
+            <div class="contribution-card">
+                <h4>Agent Swarm & PARL</h4>
+                <p>Parallel agent orchestration achieving 4.5x latency reduction. Trainable orchestrator with frozen sub-agents for stable RL.</p>
+            </div>
+            <div class="contribution-card">
+                <h4>Toggle Optimization</h4>
+                <p>Token-efficient RL that reduces output tokens by 25-30% while maintaining performance through alternating optimization phases.</p>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-pill">
+                <span class="value">1.04T</span>
+                <span class="label">Total Params</span>
+            </div>
+            <div class="stat-pill">
+                <span class="value">32B</span>
+                <span class="label">Active Params</span>
+            </div>
+            <div class="stat-pill">
+                <span class="value">384</span>
+                <span class="label">MoE Experts</span>
+            </div>
+            <div class="stat-pill">
+                <span class="value">256K</span>
+                <span class="label">Context</span>
+            </div>
+            <div class="stat-pill">
+                <span class="value">15T</span>
+                <span class="label">Training Tokens</span>
+            </div>
+        </div>
+
+        <h3 style="text-align: center; color: var(--text-dim); font-size: 0.95rem; margin-bottom: 1rem;">Headline Results</h3>
+        <div class="headline-benchmarks">
+            <div class="benchmark-pill">
+                <div class="score">78.4%</div>
+                <div class="name">BrowseComp (Agent Swarm)</div>
+            </div>
+            <div class="benchmark-pill">
+                <div class="score">96.1%</div>
+                <div class="name">AIME 2025</div>
+            </div>
+            <div class="benchmark-pill">
+                <div class="score">76.8%</div>
+                <div class="name">SWE-Bench Verified</div>
+            </div>
+            <div class="benchmark-pill">
+                <div class="score">92.3%</div>
+                <div class="name">OCRBench</div>
+            </div>
+            <div class="benchmark-pill">
+                <div class="score">79.8%</div>
+                <div class="name">LongVideoBench</div>
+            </div>
+            <div class="benchmark-pill">
+                <div class="score">63.3%</div>
+                <div class="name">OSWorld</div>
+            </div>
+        </div>
+
+        <!-- High-level architecture diagram -->
+        <div class="arch-container" style="margin-top: 2rem; background: var(--card-bg);">
+            <div class="module">
+                <span class="badge">400M</span>
+                <h4>MoonViT-3D</h4>
+                <p>Vision Encoder<br><small>NaViT + 4x temporal</small></p>
+            </div>
+            <div class="connector"></div>
+            <div class="module" style="border-color: var(--accent);">
+                <h4>MLP Projector</h4>
+                <p>Modality Bridge</p>
+            </div>
+            <div class="connector"></div>
+            <div class="module" style="border-color: var(--secondary);">
+                <span class="badge" style="background: var(--secondary);">MoE</span>
+                <h4>Kimi K2 LLM</h4>
+                <p>61 layers, MLA attention<br><small>1.04T total, 32B active</small></p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Deep Dive Sections -->
+<section>
+    <h2>Deep Dive</h2>
+    <p style="color: var(--text-dim); margin-bottom: 1.5rem;">Click any section to expand and learn more about specific components.</p>
+
+    <!-- Section 1: Vision Architecture -->
+    <div class="collapsible-section" id="vision-arch">
+        <div class="section-header" onclick="toggleSection('vision-arch')">
+            <div class="section-header-content">
+                <h3><span class="icon">👁️</span> Vision Architecture</h3>
+                <p class="section-preview">NaViT patch packing, MoonViT-3D unified encoder, MLA attention, MoE routing</p>
+            </div>
+            <div class="section-toggle">▼</div>
+        </div>
+        <div class="section-content">
+            <div class="section-content-inner">
+
+                <h4 id="navit">NaViT: Native Resolution Vision Processing</h4>
+                <p>Traditional ViTs resize all images to fixed resolution, losing aspect ratio and wasting computation on padding. <strong>NaViT</strong> (Native Resolution ViT) uses <strong>Patch n' Pack</strong> to process images at their native resolution.</p>
+
+                <div class="arch-diagram">
+                    <h4 style="color: var(--primary);">How NaViT Processes Variable-Resolution Images</h4>
+
+                    <svg viewBox="0 0 700 200" style="width: 100%; max-width: 700px; margin: 1rem 0;">
+                        <!-- Input images -->
+                        <g transform="translate(10, 30)">
+                            <text x="80" y="-10" fill="#64748b" font-size="11" text-anchor="middle">Variable Input Sizes</text>
+                            <rect x="0" y="0" width="100" height="50" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" rx="4"/>
+                            <text x="50" y="30" fill="#3b82f6" font-size="10" text-anchor="middle">1200 × 600</text>
+
+                            <rect x="110" y="0" width="50" height="50" fill="#d1fae5" stroke="#10b981" stroke-width="2" rx="4"/>
+                            <text x="135" y="30" fill="#10b981" font-size="9" text-anchor="middle">800²</text>
+                        </g>
+
+                        <!-- Arrow -->
+                        <g transform="translate(180, 50)">
+                            <line x1="0" y1="0" x2="30" y2="0" stroke="#94a3b8" stroke-width="2"/>
+                            <polygon points="30,0 22,-4 22,4" fill="#94a3b8"/>
+                        </g>
+
+                        <!-- Patches -->
+                        <g transform="translate(220, 20)">
+                            <text x="60" y="0" fill="#64748b" font-size="11" text-anchor="middle">Extract Patches</text>
+                            <g transform="translate(0, 10)">
+                                <rect x="0" y="0" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                                <rect x="20" y="0" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                                <rect x="40" y="0" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                                <rect x="60" y="0" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                                <rect x="80" y="0" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                                <rect x="100" y="0" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                                <rect x="0" y="20" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                                <rect x="20" y="20" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                                <rect x="40" y="20" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                                <rect x="60" y="20" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                                <rect x="80" y="20" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                                <rect x="100" y="20" width="18" height="18" fill="#3b82f6" stroke="#60a5fa" rx="2"/>
+                            </g>
+                            <g transform="translate(0, 55)">
+                                <rect x="0" y="0" width="18" height="18" fill="#10b981" stroke="#34d399" rx="2"/>
+                                <rect x="20" y="0" width="18" height="18" fill="#10b981" stroke="#34d399" rx="2"/>
+                                <rect x="0" y="20" width="18" height="18" fill="#10b981" stroke="#34d399" rx="2"/>
+                                <rect x="20" y="20" width="18" height="18" fill="#10b981" stroke="#34d399" rx="2"/>
+                            </g>
+                        </g>
+
+                        <!-- Arrow -->
+                        <g transform="translate(360, 50)">
+                            <line x1="0" y1="0" x2="30" y2="0" stroke="#94a3b8" stroke-width="2"/>
+                            <polygon points="30,0 22,-4 22,4" fill="#94a3b8"/>
+                        </g>
+
+                        <!-- Packed sequence -->
+                        <g transform="translate(400, 20)">
+                            <text x="80" y="0" fill="#64748b" font-size="11" text-anchor="middle">Pack into Sequence</text>
+                            <g transform="translate(0, 15)">
+                                <rect x="0" y="0" width="14" height="14" fill="#3b82f6" rx="2"/>
+                                <rect x="16" y="0" width="14" height="14" fill="#3b82f6" rx="2"/>
+                                <rect x="32" y="0" width="14" height="14" fill="#3b82f6" rx="2"/>
+                                <rect x="48" y="0" width="14" height="14" fill="#3b82f6" rx="2"/>
+                                <text x="68" y="10" fill="#94a3b8" font-size="10">...</text>
+                                <rect x="80" y="0" width="14" height="14" fill="#3b82f6" rx="2"/>
+                                <rect x="96" y="0" width="14" height="14" fill="#10b981" rx="2"/>
+                                <rect x="112" y="0" width="14" height="14" fill="#10b981" rx="2"/>
+                                <rect x="128" y="0" width="14" height="14" fill="#10b981" rx="2"/>
+                                <rect x="144" y="0" width="14" height="14" fill="#10b981" rx="2"/>
+                            </g>
+                            <text x="80" y="50" fill="#64748b" font-size="10" text-anchor="middle">Masked attention prevents cross-image attention</text>
+                        </g>
+
+                        <!-- Attention mask visualization -->
+                        <g transform="translate(430, 90)">
+                            <rect x="0" y="0" width="60" height="60" fill="#f8fafc" stroke="#cbd5e1"/>
+                            <rect x="0" y="0" width="40" height="40" fill="rgba(59, 130, 246, 0.3)" stroke="#3b82f6"/>
+                            <rect x="40" y="40" width="20" height="20" fill="rgba(16, 185, 129, 0.3)" stroke="#10b981"/>
+                            <text x="30" y="75" fill="#64748b" font-size="8" text-anchor="middle">Attention Mask</text>
+                        </g>
+                    </svg>
+
+                    <div class="formula-box">
+                        <strong>Factorized Positional Embeddings:</strong>
+                        $$\text{pos\_embed}(\text{patch}) = \text{embed}_x(x_{\text{frac}}) + \text{embed}_y(y_{\text{frac}})$$
+                        <span style="color: var(--text-dim);">where $x_{\text{frac}} = \frac{\text{patch\_col}}{\text{total\_cols}} \in [0, 1]$</span>
+                    </div>
+                </div>
+
+                <h4 id="moonvit3d">MoonViT-3D: Unified Image & Video Processing</h4>
+                <p>MoonViT-3D extends NaViT to video by treating 4 consecutive frames as a spatiotemporal volume, achieving <strong>4x temporal compression</strong> through patch-level averaging.</p>
+
+                <div class="arch-diagram">
+                    <svg viewBox="0 0 700 150" style="width: 100%; max-width: 700px;">
+                        <!-- 4 frames -->
+                        <g transform="translate(10, 30)">
+                            <text x="50" y="-10" fill="#64748b" font-size="10">4 Frames</text>
+                            <rect x="0" y="0" width="60" height="45" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" rx="3"/>
+                            <rect x="10" y="8" width="60" height="45" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" rx="3"/>
+                            <rect x="20" y="16" width="60" height="45" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" rx="3"/>
+                            <rect x="30" y="24" width="60" height="45" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" rx="3"/>
+                            <text x="55" y="95" fill="#3b82f6" font-size="9" text-anchor="middle">t=0,1,2,3</text>
+                        </g>
+
+                        <g transform="translate(110, 50)">
+                            <line x1="0" y1="0" x2="25" y2="0" stroke="#94a3b8" stroke-width="2"/>
+                            <polygon points="25,0 18,-4 18,4" fill="#94a3b8"/>
+                        </g>
+
+                        <!-- Shared encoder -->
+                        <g transform="translate(145, 25)">
+                            <rect x="0" y="0" width="90" height="60" fill="#f1f5f9" stroke="#3b82f6" stroke-width="2" rx="6"/>
+                            <text x="45" y="25" fill="#3b82f6" font-size="10" text-anchor="middle" font-weight="bold">MoonViT</text>
+                            <text x="45" y="40" fill="#64748b" font-size="9" text-anchor="middle">(shared weights)</text>
+                            <text x="45" y="75" fill="#64748b" font-size="9" text-anchor="middle">32 patches</text>
+                        </g>
+
+                        <g transform="translate(245, 50)">
+                            <line x1="0" y1="0" x2="25" y2="0" stroke="#10b981" stroke-width="2"/>
+                            <polygon points="25,0 18,-4 18,4" fill="#10b981"/>
+                            <text x="12" y="-8" fill="#10b981" font-size="8" text-anchor="middle">pool</text>
+                        </g>
+
+                        <!-- Temporal pooling -->
+                        <g transform="translate(280, 30)">
+                            <rect x="0" y="0" width="70" height="50" fill="#d1fae5" stroke="#10b981" stroke-width="2" rx="6"/>
+                            <text x="35" y="22" fill="#10b981" font-size="9" text-anchor="middle" font-weight="bold">Temporal</text>
+                            <text x="35" y="35" fill="#10b981" font-size="9" text-anchor="middle" font-weight="bold">Pooling</text>
+                            <text x="35" y="65" fill="#10b981" font-size="9" text-anchor="middle">8 tokens</text>
+                        </g>
+
+                        <g transform="translate(360, 50)">
+                            <line x1="0" y1="0" x2="25" y2="0" stroke="#d97706" stroke-width="2"/>
+                            <polygon points="25,0 18,-4 18,4" fill="#d97706"/>
+                        </g>
+
+                        <!-- MLP projector -->
+                        <g transform="translate(395, 30)">
+                            <rect x="0" y="0" width="70" height="50" fill="#fef3c7" stroke="#d97706" stroke-width="2" rx="6"/>
+                            <text x="35" y="22" fill="#d97706" font-size="9" text-anchor="middle" font-weight="bold">MLP</text>
+                            <text x="35" y="35" fill="#d97706" font-size="9" text-anchor="middle" font-weight="bold">Projector</text>
+                        </g>
+
+                        <g transform="translate(475, 50)">
+                            <line x1="0" y1="0" x2="25" y2="0" stroke="#94a3b8" stroke-width="2"/>
+                            <polygon points="25,0 18,-4 18,4" fill="#94a3b8"/>
+                        </g>
+
+                        <!-- Output -->
+                        <g transform="translate(510, 30)">
+                            <rect x="0" y="0" width="80" height="50" fill="#f1f5f9" stroke="#2563eb" stroke-width="2" rx="6"/>
+                            <text x="40" y="22" fill="#2563eb" font-size="9" text-anchor="middle" font-weight="bold">LLM Tokens</text>
+                            <text x="40" y="38" fill="#64748b" font-size="8" text-anchor="middle">8 visual tokens</text>
+                        </g>
+
+                        <!-- Compression ratio -->
+                        <g transform="translate(200, 115)">
+                            <rect x="0" y="0" width="180" height="25" fill="rgba(16, 185, 129, 0.1)" stroke="#10b981" stroke-dasharray="4,2" rx="4"/>
+                            <text x="90" y="16" fill="#10b981" font-size="10" text-anchor="middle" font-weight="bold">4x Temporal Compression</text>
+                        </g>
+                    </svg>
+
+                    <div class="formula-box" style="margin: 1rem 0;">
+                        $$\mathbf{p}_{i,j} = \frac{1}{4} \sum_{t=0}^{3} \mathbf{f}_{t,i,j}$$
+                        <span style="color: var(--text-dim); display: block; margin-top: 0.5rem;">Patches at same spatial position $(i,j)$ across 4 frames are averaged</span>
+                    </div>
+
+                    <div class="insight-box">
+                        <strong>Why This Matters:</strong> A 60-second video at 30fps has 1,800 frames. With 4x compression, MoonViT-3D processes it as 450 temporal chunks, making long video understanding feasible within the 256K context window.
+                    </div>
+                </div>
+
+                <h4 id="mla">MLA: Multi-head Latent Attention</h4>
+                <p>The K2 backbone uses <strong>Multi-head Latent Attention</strong> instead of standard MHA, compressing the KV cache by ~93%.</p>
+
+                <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                    <div style="background: #fef2f2; padding: 1.25rem; border-radius: 0.75rem; border: 1px solid #fecaca;">
+                        <h4 style="color: #dc2626; margin: 0 0 0.75rem 0; font-size: 0.95rem;">Standard MHA</h4>
+                        <p style="font-size: 0.85rem; color: var(--text-dim); margin: 0;">Cache full K, V matrices per layer</p>
+                        <p style="font-size: 0.9rem; color: #dc2626; margin: 0.75rem 0 0 0;">$\text{Cache} = 2 \times n_h \times d_h$</p>
+                    </div>
+                    <div style="background: #ecfdf5; padding: 1.25rem; border-radius: 0.75rem; border: 1px solid #a7f3d0;">
+                        <h4 style="color: #059669; margin: 0 0 0.75rem 0; font-size: 0.95rem;">MLA (K2.5)</h4>
+                        <p style="font-size: 0.85rem; color: var(--text-dim); margin: 0;">Cache compressed latent, reconstruct at attention time</p>
+                        <p style="font-size: 0.9rem; color: #059669; margin: 0.75rem 0 0 0;">$\text{Cache} = d_c \ll 2 n_h d_h$</p>
+                    </div>
+                </div>
+
+                <div class="formula-box" style="margin-top: 1rem;">
+                    $$\mathbf{c} = W_{\text{down}} \cdot \mathbf{h}$$
+                    <span style="color: var(--text-dim); display: block; margin: -0.5rem 0 0.5rem 1rem;">compress hidden state to latent</span>
+                    $$\mathbf{K} = W_{\text{up}}^K \cdot \mathbf{c}, \quad \mathbf{V} = W_{\text{up}}^V \cdot \mathbf{c}$$
+                    <span style="color: var(--text-dim); display: block; margin: -0.5rem 0 0 1rem;">reconstruct K, V at attention time</span>
+                </div>
+
+                <h4 id="moe">Mixture of Experts (MoE)</h4>
+                <p>K2.5 has 384 experts but activates only 8 per token, enabling 1T+ parameters with 32B compute cost.</p>
+
+                <div class="formula-box" style="margin-bottom: 1rem;">
+                    $$\mathbf{h}' = \sum_{i \in \text{TopK}(G(\mathbf{h}))} g_i \cdot \text{FFN}_i(\mathbf{h})$$
+                    <span style="color: var(--text-dim); display: block; margin-top: 0.5rem;">where $G(\mathbf{h}) = \text{softmax}(W_g \cdot \mathbf{h})$ is the router and $g_i$ are gating weights</span>
+                </div>
+
+                <div class="arch-diagram">
+                    <svg viewBox="0 0 600 120" style="width: 100%; max-width: 600px;">
+                        <!-- Router -->
+                        <g transform="translate(10, 30)">
+                            <rect x="0" y="0" width="60" height="40" fill="#fef3c7" stroke="#d97706" stroke-width="2" rx="4"/>
+                            <text x="30" y="20" fill="#d97706" font-size="9" text-anchor="middle" font-weight="bold">Router</text>
+                            <text x="30" y="32" fill="#d97706" font-size="8" text-anchor="middle">softmax</text>
+                        </g>
+
+                        <g transform="translate(80, 45)">
+                            <line x1="0" y1="0" x2="20" y2="0" stroke="#d97706" stroke-width="2"/>
+                            <polygon points="20,0 14,-3 14,3" fill="#d97706"/>
+                        </g>
+
+                        <!-- Expert grid -->
+                        <g transform="translate(110, 10)">
+                            <text x="80" y="0" fill="#64748b" font-size="9" text-anchor="middle">384 Experts (select top-8)</text>
+                            <g transform="translate(0, 10)">
+                                <rect x="0" y="0" width="18" height="18" fill="#10b981" stroke="#34d399" rx="2"/>
+                                <rect x="22" y="0" width="18" height="18" fill="#e2e8f0" stroke="#cbd5e1" rx="2"/>
+                                <rect x="44" y="0" width="18" height="18" fill="#e2e8f0" stroke="#cbd5e1" rx="2"/>
+                                <rect x="66" y="0" width="18" height="18" fill="#10b981" stroke="#34d399" rx="2"/>
+                                <rect x="88" y="0" width="18" height="18" fill="#e2e8f0" stroke="#cbd5e1" rx="2"/>
+                                <rect x="110" y="0" width="18" height="18" fill="#10b981" stroke="#34d399" rx="2"/>
+                                <rect x="132" y="0" width="18" height="18" fill="#e2e8f0" stroke="#cbd5e1" rx="2"/>
+                                <text x="158" y="12" fill="#94a3b8" font-size="12">...</text>
+
+                                <rect x="0" y="22" width="18" height="18" fill="#e2e8f0" stroke="#cbd5e1" rx="2"/>
+                                <rect x="22" y="22" width="18" height="18" fill="#10b981" stroke="#34d399" rx="2"/>
+                                <rect x="44" y="22" width="18" height="18" fill="#10b981" stroke="#34d399" rx="2"/>
+                                <rect x="66" y="22" width="18" height="18" fill="#e2e8f0" stroke="#cbd5e1" rx="2"/>
+                                <rect x="88" y="22" width="18" height="18" fill="#e2e8f0" stroke="#cbd5e1" rx="2"/>
+                                <rect x="110" y="22" width="18" height="18" fill="#10b981" stroke="#34d399" rx="2"/>
+                                <rect x="132" y="22" width="18" height="18" fill="#10b981" stroke="#34d399" rx="2"/>
+                                <text x="158" y="34" fill="#94a3b8" font-size="12">...</text>
+                            </g>
+                            <g transform="translate(0, 65)">
+                                <rect x="0" y="0" width="10" height="10" fill="#10b981" rx="1"/>
+                                <text x="14" y="9" fill="#64748b" font-size="8">Active (8)</text>
+                                <rect x="65" y="0" width="10" height="10" fill="#e2e8f0" stroke="#cbd5e1" rx="1"/>
+                                <text x="79" y="9" fill="#64748b" font-size="8">Inactive (376)</text>
+                            </g>
+                        </g>
+
+                        <!-- Arrow -->
+                        <g transform="translate(295, 45)">
+                            <line x1="0" y1="0" x2="20" y2="0" stroke="#10b981" stroke-width="2"/>
+                            <polygon points="20,0 14,-3 14,3" fill="#10b981"/>
+                        </g>
+
+                        <!-- Weighted sum -->
+                        <g transform="translate(325, 25)">
+                            <rect x="0" y="0" width="80" height="50" fill="#d1fae5" stroke="#10b981" stroke-width="2" rx="6"/>
+                            <text x="40" y="22" fill="#10b981" font-size="9" text-anchor="middle" font-weight="bold">Weighted</text>
+                            <text x="40" y="35" fill="#10b981" font-size="9" text-anchor="middle" font-weight="bold">Sum</text>
+                        </g>
+
+                        <!-- Arrow -->
+                        <g transform="translate(415, 45)">
+                            <line x1="0" y1="0" x2="20" y2="0" stroke="#94a3b8" stroke-width="2"/>
+                            <polygon points="20,0 14,-3 14,3" fill="#94a3b8"/>
+                        </g>
+
+                        <!-- Output -->
+                        <g transform="translate(445, 25)">
+                            <rect x="0" y="0" width="70" height="50" fill="#f1f5f9" stroke="#2563eb" stroke-width="2" rx="6"/>
+                            <text x="35" y="30" fill="#2563eb" font-size="9" text-anchor="middle" font-weight="bold">Output</text>
+                        </g>
+                    </svg>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Joint Optimization -->
+    <div class="collapsible-section" id="joint-opt">
+        <div class="section-header" onclick="toggleSection('joint-opt')">
+            <div class="section-header-content">
+                <h3><span class="icon">🔗</span> Joint Optimization of Text & Vision</h3>
+                <p class="section-preview">Early fusion, Zero-Vision SFT, cross-modal RL transfer</p>
+            </div>
+            <div class="section-toggle">▼</div>
+        </div>
+        <div class="section-content">
+            <div class="section-content-inner">
+
+                <p>A key insight: <strong>joint optimization enhances both modalities</strong> rather than causing conflict.</p>
+
+                <div class="grid">
+                    <div class="card">
+                        <h4>Early Fusion (10:90 ratio)</h4>
+                        <p>Vision tokens included from training start, avoiding the "dip-and-recover" pattern seen when adding vision late.</p>
+                    </div>
+                    <div class="card">
+                        <h4>Zero-Vision SFT</h4>
+                        <p>Text-only SFT activates visual reasoning. Human-annotated visual trajectories actually <em>hurt</em> generalization.</p>
+                    </div>
+                    <div class="card">
+                        <h4>Cross-Modal RL Transfer</h4>
+                        <p>Visual RL improves text benchmarks: MMLU-Pro +1.7%, GPQA +2.1%, LongBench +2.2%.</p>
+                    </div>
+                </div>
+
+                <h4>Early vs Late Fusion Comparison</h4>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>Vision Injection</th>
+                            <th>Ratio</th>
+                            <th>Vision Reasoning</th>
+                            <th>Text Reasoning</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Early (K2.5)</strong></td>
+                            <td>0%</td>
+                            <td>10:90</td>
+                            <td class="highlight">43.8</td>
+                            <td>58.5</td>
+                        </tr>
+                        <tr>
+                            <td>Mid</td>
+                            <td>50%</td>
+                            <td>20:80</td>
+                            <td>40.7</td>
+                            <td class="highlight">58.6</td>
+                        </tr>
+                        <tr>
+                            <td>Late</td>
+                            <td>80%</td>
+                            <td>50:50</td>
+                            <td>39.0</td>
+                            <td>57.8</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="insight-box">
+                    <strong>Why Early Fusion Works:</strong> Co-optimizing from the start creates unified multimodal representations without the shock of late-stage domain migration.
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Agent Swarm -->
+    <div class="collapsible-section" id="agent-swarm">
+        <div class="section-header" onclick="toggleSection('agent-swarm')">
+            <div class="section-header-content">
+                <h3><span class="icon">🐝</span> Agent Swarm & PARL</h3>
+                <p class="section-preview">4.5x latency reduction through parallel agent orchestration</p>
+            </div>
+            <div class="section-toggle">▼</div>
+        </div>
+        <div class="section-content">
+            <div class="section-content-inner">
+
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="value">4.5x</span>
+                        <span class="label">Latency Reduction</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="value">100</span>
+                        <span class="label">Max Sub-Agents</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="value">1,500</span>
+                        <span class="label">Max Tool Calls</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="value">78.4%</span>
+                        <span class="label">BrowseComp</span>
+                    </div>
+                </div>
+
+                <h4>Architecture: Trainable Orchestrator + Frozen Sub-Agents</h4>
+                <p>PARL uses a <strong>decoupled architecture</strong> to avoid credit assignment ambiguity and training instability.</p>
+
+                <div class="swarm-stage" id="swarmStage">
+                    <div class="agent-node orchestrator">Orchestrator<br>(Trainable)</div>
+                    <button class="btn" onclick="runSwarm()" style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); z-index:10; background: var(--primary); color: white; border: none; padding: 0.5rem 1.25rem; border-radius: 0.5rem; cursor: pointer;">Simulate Swarm</button>
+                    <div style="position: absolute; top: 15px; right: 15px; text-align: right; color: var(--text-dim); font-size: 0.75rem;">
+                        <strong style="color: var(--secondary);">Sub-agents:</strong> Frozen, parallel
+                    </div>
+                </div>
+
+                <h4>PARL Reward Function</h4>
+                <div class="formula-box">
+                    $$r_{\text{PARL}}(x, y) = \lambda_1 \cdot r_{\text{parallel}} + \lambda_2 \cdot r_{\text{finish}} + r_{\text{perf}}(x, y)$$
+                </div>
+
+                <div class="reward-components">
+                    <div class="reward-component">
+                        <h5>$r_{\text{parallel}}$</h5>
+                        <p>Prevents serial collapse (defaulting to single-agent)</p>
+                    </div>
+                    <div class="reward-component">
+                        <h5>$r_{\text{finish}}$</h5>
+                        <p>Prevents spurious parallelism (spawning without purpose)</p>
+                    </div>
+                    <div class="reward-component">
+                        <h5>$r_{\text{perf}}$</h5>
+                        <p>Task-level outcome ($\lambda_1, \lambda_2$ annealed to zero)</p>
+                    </div>
+                </div>
+
+                <h4>Critical Steps Metric</h4>
+                <p>Unlike total steps, Critical Steps measures the <strong>critical path</strong> in the computation graph:</p>
+                <div class="formula-box">
+                    $$\text{CriticalSteps} = \sum_{t=1}^{T} \left( S_{\text{main}}^{(t)} + \max_i S_{\text{sub},i}^{(t)} \right)$$
+                    <span style="color: var(--text-dim); display: block; margin-top: 0.5rem;">Incentivizes balanced task decomposition that shortens the longest parallel branch</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Training Pipeline -->
+    <div class="collapsible-section" id="training">
+        <div class="section-header" onclick="toggleSection('training')">
+            <div class="section-header-content">
+                <h3><span class="icon">📊</span> Training Pipeline</h3>
+                <p class="section-preview">3-stage pre-training on 15T+ tokens with YaRN context extension</p>
+            </div>
+            <div class="section-toggle">▼</div>
+        </div>
+        <div class="section-content">
+            <div class="section-content-inner">
+
+                <div class="pipeline-flow">
+                    <div class="pipeline-stage">
+                        <div class="stage-name">ViT Training</div>
+                        <div class="stage-detail">1T tokens · Seq 4K</div>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage active">
+                        <div class="stage-name">Joint Pre-training</div>
+                        <div class="stage-detail">15T tokens · Seq 4K</div>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage">
+                        <div class="stage-name">Long-context</div>
+                        <div class="stage-detail">700B tokens · 32K→256K</div>
+                    </div>
+                </div>
+
+                <div class="grid">
+                    <div class="card">
+                        <h4>Stage 1: ViT Training</h4>
+                        <p>MoonViT-3D trained with SigLIP contrastive + caption loss. Two-stage alignment with Moonlight-16B.</p>
+                    </div>
+                    <div class="card">
+                        <h4>Stage 2: Joint Pre-training</h4>
+                        <p>15T vision-text tokens at 4K context. Enhanced coding content with repository-level data.</p>
+                    </div>
+                    <div class="card">
+                        <h4>Stage 3: Long-context</h4>
+                        <p>YaRN interpolation extends context 32K→256K. Significant long video comprehension gains.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 5: Post-Training -->
+    <div class="collapsible-section" id="post-training">
+        <div class="section-header" onclick="toggleSection('post-training')">
+            <div class="section-header-content">
+                <h3><span class="icon">🎯</span> Post-Training: SFT & RL</h3>
+                <p class="section-preview">Toggle optimization for 25-30% token reduction, unified agentic RL environment</p>
+            </div>
+            <div class="section-toggle">▼</div>
+        </div>
+        <div class="section-content">
+            <div class="section-content-inner">
+
+                <h4>Toggle: Token-Efficient RL</h4>
+                <p>Alternates between inference-time scaling and budget-constrained optimization:</p>
+
+                <div class="toggle-phases">
+                    <div class="phase-box phase0">
+                        <h5><span style="background: var(--accent); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Phase 0</span> Budget Limited</h5>
+                        <p>Solve within token budget. Constraint enforced when accuracy exceeds threshold.</p>
+                    </div>
+                    <div class="phase-box phase1">
+                        <h5><span style="background: var(--secondary); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Phase 1</span> Standard Scaling</h5>
+                        <p>Generate up to max tokens, encouraging inference-time scaling.</p>
+                    </div>
+                </div>
+
+                <div class="insight-box">
+                    <strong>Toggle Results:</strong> 25-30% output token reduction with negligible performance impact. Redundant patterns (repeated verifications, mechanical calculations) decrease substantially.
+                </div>
+
+                <h4>Policy Optimization</h4>
+                <div class="formula-box">
+                    $$\mathcal{L}_{\text{RL}}(\theta) = \mathbb{E}_{x \sim \mathcal{D}} \left[ \frac{1}{N} \sum_{i=1}^{N} \text{Clip}(\rho_i, \alpha, \beta) \cdot \left( r(x,y) - \bar{r}(x) \right) - \tau \cdot (\log \rho_i)^2 \right]$$
+                    <span style="color: var(--text-dim); display: block; margin-top: 0.5rem;">where $\rho_i = \frac{\pi_\theta(y_i|x, y_{<i})}{\pi_{\text{ref}}(y_i|x, y_{<i})}$ is the token-level importance ratio</span>
+                </div>
+
+                <h4>Generative Reward Models (GRMs)</h4>
+                <p>Fine-grained evaluations aligned with user experience: helpfulness, contextual relevance, aesthetic quality, instruction following. Multiple rubrics mitigate reward hacking.</p>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 6: Benchmarks -->
+    <div class="collapsible-section" id="benchmarks">
+        <div class="section-header" onclick="toggleSection('benchmarks')">
+            <div class="section-header-content">
+                <h3><span class="icon">📈</span> Full Benchmark Results</h3>
+                <p class="section-preview">Comprehensive comparison across reasoning, coding, vision, agentic, and computer use</p>
+            </div>
+            <div class="section-toggle">▼</div>
+        </div>
+        <div class="section-content">
+            <div class="section-content-inner">
+
+                <div class="benchmark-category">
+                    <h4>Reasoning & General</h4>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr><th>Benchmark</th><th>Kimi K2.5</th><th>Claude Opus 4.5</th><th>GPT-5.2</th><th>Gemini 3 Pro</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>HLE-Full w/ tools</td><td class="highlight">50.2</td><td>43.2</td><td>45.5</td><td>45.8</td></tr>
+                            <tr><td>AIME 2025</td><td>96.1</td><td>92.8</td><td class="highlight">100</td><td>95.0</td></tr>
+                            <tr><td>GPQA-Diamond</td><td>87.6</td><td>87.0</td><td class="highlight">92.4</td><td>91.9</td></tr>
+                            <tr><td>MMLU-Pro</td><td>87.1</td><td>89.3</td><td>86.7</td><td class="highlight">90.1</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="benchmark-category">
+                    <h4>Coding</h4>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr><th>Benchmark</th><th>Kimi K2.5</th><th>Claude Opus 4.5</th><th>GPT-5.2</th><th>Gemini 3 Pro</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>SWE-Bench Verified</td><td>76.8</td><td class="highlight">80.9</td><td>80.0</td><td>76.2</td></tr>
+                            <tr><td>SWE-Bench Multilingual</td><td>73.0</td><td class="highlight">77.5</td><td>72.0</td><td>65.0</td></tr>
+                            <tr><td>LiveCodeBench v6</td><td>85.0</td><td>82.2</td><td>-</td><td class="highlight">87.4</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="benchmark-category">
+                    <h4>Agentic</h4>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr><th>Benchmark</th><th>K2.5</th><th>K2.5 Agent Swarm</th><th>Claude Opus 4.5</th><th>GPT-5.2</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>BrowseComp</td><td>60.6</td><td class="highlight">78.4</td><td>37.0</td><td>65.8</td></tr>
+                            <tr><td>WideSearch</td><td>72.7</td><td class="highlight">79.0</td><td>76.2</td><td>-</td></tr>
+                            <tr><td>DeepSearchQA</td><td class="highlight">77.1</td><td>-</td><td>76.1</td><td>71.3</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="benchmark-category">
+                    <h4>Vision & Video</h4>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr><th>Benchmark</th><th>Kimi K2.5</th><th>Claude Opus 4.5</th><th>GPT-5.2</th><th>Gemini 3 Pro</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>MMMU-Pro</td><td>78.5</td><td>74.0</td><td>79.5</td><td class="highlight">81.0</td></tr>
+                            <tr><td>OCRBench</td><td class="highlight">92.3</td><td>86.5</td><td>80.7</td><td>90.3</td></tr>
+                            <tr><td>VideoMMMU</td><td>86.6</td><td>84.4</td><td>85.9</td><td class="highlight">87.6</td></tr>
+                            <tr><td>LongVideoBench</td><td class="highlight">79.8</td><td>67.2</td><td>76.5</td><td>77.7</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="benchmark-category">
+                    <h4>Computer Use</h4>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr><th>Benchmark</th><th>Kimi K2.5</th><th>Claude Opus 4.5</th><th>GPT-5.2</th><th>Qwen3-VL</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>OSWorld-Verified</td><td>63.3</td><td class="highlight">66.3</td><td>8.6</td><td>38.1</td></tr>
+                            <tr><td>WebArena</td><td>58.9</td><td class="highlight">63.4</td><td>-</td><td>26.4</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<footer>
+    <p>Based on the <a href="https://huggingface.co/moonshotai/Kimi-K2.5" target="_blank">Kimi K2.5 Technical Report</a> by Moonshot AI (January 2026)</p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem;">Model weights available under MIT License at <a href="https://huggingface.co/moonshotai/Kimi-K2.5" target="_blank">HuggingFace</a></p>
+</footer>
+
+<script>
+    function toggleSection(id) {
+        const section = document.getElementById(id);
+        section.classList.toggle('expanded');
+    }
+
+    // Agent Swarm Animation
+    function runSwarm() {
+        const stage = document.getElementById('swarmStage');
+        document.querySelectorAll('.sub-agent').forEach(el => el.remove());
+        document.querySelectorAll('.particle').forEach(el => el.remove());
+
+        const stageRect = stage.getBoundingClientRect();
+        const orchX = stageRect.width * 0.1 + 40;
+        const orchY = stageRect.height * 0.5;
+
+        const agentTypes = ['Research', 'Verify', 'Analyze', 'Synthesize', 'Check'];
+
+        for (let i = 0; i < 5; i++) {
+            const sub = document.createElement('div');
+            sub.classList.add('agent-node', 'sub-agent');
+            sub.innerHTML = agentTypes[i];
+
+            const finalX = orchX + 150 + (Math.random() * 60);
+            const finalY = orchY + (i - 2) * 55;
+
+            sub.style.left = orchX + 'px';
+            sub.style.top = (orchY - 30) + 'px';
+            stage.appendChild(sub);
+
+            setTimeout(() => {
+                sub.style.opacity = '1';
+                sub.style.left = finalX + 'px';
+                sub.style.top = (finalY - 30) + 'px';
+            }, 100 + (i * 100));
+
+            setTimeout(() => {
+                createParticle(stage, finalX + 30, finalY, orchX + 40, orchY);
+            }, 1500 + (i * 150));
+        }
+    }
+
+    function createParticle(stage, startX, startY, endX, endY) {
+        const p = document.createElement('div');
+        p.classList.add('particle');
+        p.style.left = startX + 'px';
+        p.style.top = startY + 'px';
+        p.style.opacity = '1';
+        stage.appendChild(p);
+
+        const duration = 600;
+        const startTime = Date.now();
+
+        function animate() {
+            const progress = Math.min((Date.now() - startTime) / duration, 1);
+            p.style.left = startX + (endX - startX) * progress + 'px';
+            p.style.top = startY + (endY - startY) * progress + 'px';
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                p.remove();
+                const orch = document.querySelector('.orchestrator');
+                orch.style.boxShadow = '0 0 15px rgba(5, 150, 105, 0.5)';
+                setTimeout(() => { orch.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.1)'; }, 200);
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+</script>
+
+</body>
+</html>
