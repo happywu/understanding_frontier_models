@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Generation: Zero to Expert</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- Navigation Sidebar -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <h1 class="logo">VideoGen<span class="accent">Guide</span></h1>
+    <p class="tagline">Zero to Expert</p>
+  </div>
+  <ul class="nav-list">
+    <li><a href="#overview" class="nav-link active" data-section="overview">Overview</a></li>
+    <li><a href="#pipeline" class="nav-link" data-section="pipeline">Generation Pipeline</a></li>
+    <li><a href="#vae" class="nav-link" data-section="vae">VAE Tokenization</a></li>
+    <li><a href="#flow-matching" class="nav-link" data-section="flow-matching">Flow Matching</a></li>
+    <li><a href="#dit" class="nav-link" data-section="dit">DiT Architecture</a></li>
+    <li><a href="#conditioning" class="nav-link" data-section="conditioning">Text Conditioning</a></li>
+    <li><a href="#tasks" class="nav-link" data-section="tasks">Generation Tasks</a></li>
+    <li><a href="#data" class="nav-link" data-section="data">Data Pipeline</a></li>
+    <li><a href="#training" class="nav-link" data-section="training">Training at Scale</a></li>
+    <li><a href="#models" class="nav-link" data-section="models">Frontier Models</a></li>
+    <li><a href="#alignment" class="nav-link" data-section="alignment">RL &amp; Alignment</a></li>
+    <li><a href="#frontiers" class="nav-link" data-section="frontiers">Open Problems</a></li>
+    <li><a href="#references" class="nav-link" data-section="references">References</a></li>
+  </ul>
+  <div class="sidebar-footer">
+    <label class="toggle-label">
+      <span>Advanced Math</span>
+      <input type="checkbox" id="math-toggle">
+      <span class="toggle-slider"></span>
+    </label>
+    <button id="theme-toggle" class="theme-toggle-btn" style="margin-top:0.75rem;" aria-label="Toggle theme">
+      <span class="theme-icon" id="theme-icon">&#9790;</span>
+      <span id="theme-label">Light Mode</span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile header -->
+<header id="mobile-header">
+  <button id="menu-btn" aria-label="Toggle menu">&#9776;</button>
+  <span class="logo-sm">VideoGen<span class="accent">Guide</span></span>
+  <label class="toggle-label-sm">
+    <span>Adv</span>
+    <input type="checkbox" id="math-toggle-mobile">
+    <span class="toggle-slider"></span>
+  </label>
+  <button id="theme-toggle-mobile" class="theme-toggle-btn-sm" aria-label="Toggle theme">
+    <span class="theme-icon" id="theme-icon-mobile">&#9790;</span>
+  </button>
+</header>
+
+<!-- Main Content -->
+<main id="content">
+
+<!-- ===================== SECTION: OVERVIEW ===================== -->
+<section id="overview" class="page active">
+  <div class="section-hero">
+    <h1>Video Generation: From Zero to Expert</h1>
+    <p class="hero-sub">A comprehensive guide to building Veo3-level video generation systems from scratch. Covers the full stack: VAE compression, Diffusion Transformers, flow matching, text conditioning, training infrastructure, and RL alignment.</p>
+    <div class="hero-badges">
+      <span class="badge badge-emerald">Flow Matching</span>
+      <span class="badge badge-violet">DiT Architecture</span>
+      <span class="badge badge-blue">2024-2025 Focus</span>
+      <span class="badge badge-amber">RL Alignment</span>
+    </div>
+  </div>
+
+  <h2>The 30,000-Foot View</h2>
+  <p>Modern video generation models (Sora, Veo 3, Wan 2.1) share a common architecture. At the highest level, generating a video requires just four steps:</p>
+
+  <!-- Interactive Pipeline Overview -->
+  <div class="diagram-card">
+    <div class="diagram-title">End-to-End Video Generation Pipeline</div>
+    <div class="pipeline-overview" id="pipeline-overview-viz">
+      <div class="pipe-stage" data-color="blue">
+        <div class="pipe-icon">T</div>
+        <div class="pipe-label">Text Encoder</div>
+        <div class="pipe-sub">Encode prompt</div>
+      </div>
+      <div class="pipe-arrow">&rarr;</div>
+      <div class="pipe-stage" data-color="violet">
+        <div class="pipe-icon">z</div>
+        <div class="pipe-label">Noise &rarr; DiT</div>
+        <div class="pipe-sub">Denoise latent</div>
+      </div>
+      <div class="pipe-arrow">&rarr;</div>
+      <div class="pipe-stage" data-color="emerald">
+        <div class="pipe-icon">D</div>
+        <div class="pipe-label">VAE Decode</div>
+        <div class="pipe-sub">Latent &rarr; pixels</div>
+      </div>
+      <div class="pipe-arrow">&rarr;</div>
+      <div class="pipe-stage" data-color="amber">
+        <div class="pipe-icon">&#9658;</div>
+        <div class="pipe-label">Video Output</div>
+        <div class="pipe-sub">T&times;H&times;W&times;3</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <h3>What You'll Learn</h3>
+      <ul>
+        <li>How 3D VAEs compress video into compact latent tokens (256&times; compression)</li>
+        <li>How flow matching replaces traditional diffusion with straight ODE paths</li>
+        <li>How Diffusion Transformers (DiT) process spacetime patches</li>
+        <li>How text encoders (T5, CLIP, MLLMs) condition generation</li>
+        <li>How to train video models at 14B+ parameter scale</li>
+        <li>How GRPO/DPO align video models with human preferences</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Prerequisites</h3>
+      <ul>
+        <li><strong>Required:</strong> Basic deep learning (CNNs, transformers, attention)</li>
+        <li><strong>Required:</strong> PyTorch familiarity</li>
+        <li><strong>Helpful:</strong> Basic understanding of LLMs and GRPO</li>
+        <li><strong>Helpful:</strong> Computer vision fundamentals</li>
+        <li><strong>Not required:</strong> Prior knowledge of diffusion models or GANs</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>How This Guide Is Organized</h2>
+  <p>We follow a <strong>top-down</strong> approach: start with the full pipeline, then zoom into each component. Each section provides:</p>
+  <div class="three-col">
+    <div class="mini-card">
+      <div class="mini-icon" style="color:var(--emerald)">&#9670;</div>
+      <h4>Intuition First</h4>
+      <p>Plain-English explanations with visual diagrams for every concept</p>
+    </div>
+    <div class="mini-card">
+      <div class="mini-icon" style="color:var(--violet)">&#9670;</div>
+      <h4>Math Side-by-Side</h4>
+      <p>Toggle "Advanced Math" to see full derivations alongside intuition</p>
+    </div>
+    <div class="mini-card">
+      <div class="mini-icon" style="color:var(--amber)">&#9670;</div>
+      <h4>Latest Techniques</h4>
+      <p>Focus on 2024-2025: flow matching, DiT, Sora/Veo3/Wan architectures</p>
+    </div>
+  </div>
+
+  <h2>The Evolution: Why Now?</h2>
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:var(--muted)"></div>
+      <div class="timeline-content">
+        <h4>2020-2022: U-Net Diffusion Era</h4>
+        <p>DDPM, LDM (Stable Diffusion) proved latent diffusion works for images. U-Net backbone, discrete noise schedules, hundreds of sampling steps.</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:var(--blue)"></div>
+      <div class="timeline-content">
+        <h4>2023: DiT + Flow Matching</h4>
+        <p>DiT paper (Peebles & Xie) replaced U-Net with ViT. Flow matching (Lipman et al.) introduced straight ODE paths. These two innovations converge.</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:var(--emerald)"></div>
+      <div class="timeline-content">
+        <h4>2024: Video Generation Explosion</h4>
+        <p>Sora, CogVideoX, HunyuanVideo, Movie Gen, Stable Video Diffusion. 3D VAEs, spacetime patches, 13B+ parameter models. Flow matching becomes dominant.</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:var(--amber)"></div>
+      <div class="timeline-content">
+        <h4>2025: Scale + Alignment</h4>
+        <p>Veo 3 (joint audio-video), Wan 2.1 (#1 VBench), Goku, GRPO/DPO for video alignment. 30B-49B parameter frontier. RL-based fine-tuning matures.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: PIPELINE ===================== -->
+<section id="pipeline" class="page">
+  <h1>The Generation Pipeline</h1>
+  <p class="section-intro">Every modern video generation model follows the same high-level architecture. Understanding this pipeline is the key to understanding the entire field.</p>
+
+  <h2>Full Pipeline Diagram</h2>
+  <div class="diagram-card">
+    <div class="diagram-title">Text-Conditioned Video Generation</div>
+    <!-- SVG-based pipeline with explicit connections -->
+    <div class="pipeline-svg-wrap">
+      <svg id="pipeline-svg" viewBox="0 0 820 280" class="pipeline-svg" aria-label="Video generation pipeline diagram">
+        <defs>
+          <marker id="ah-emerald" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="var(--emerald)"/>
+          </marker>
+          <marker id="ah-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="var(--blue)"/>
+          </marker>
+          <marker id="ah-muted" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="var(--muted)"/>
+          </marker>
+          <marker id="ah-violet" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="var(--violet)"/>
+          </marker>
+          <marker id="ah-amber" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="var(--amber)"/>
+          </marker>
+        </defs>
+
+        <!-- Row 1: Text Prompt -> Text Encoder -->
+        <rect x="20" y="30" width="150" height="50" rx="8" fill="var(--bg-card)" stroke="var(--border)" stroke-width="1.5"/>
+        <text x="95" y="52" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">"A golden retriever</text>
+        <text x="95" y="67" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">playing in snow"</text>
+
+        <line x1="170" y1="55" x2="218" y2="55" stroke="var(--blue)" stroke-width="1.5" marker-end="url(#ah-blue)"/>
+
+        <rect x="220" y="30" width="130" height="50" rx="8" fill="rgba(59,130,246,0.06)" stroke="rgba(59,130,246,0.4)" stroke-width="1.5"/>
+        <text x="285" y="52" text-anchor="middle" fill="var(--fg)" font-size="12" font-weight="600">Text Encoder</text>
+        <text x="285" y="67" text-anchor="middle" fill="var(--fg-muted)" font-size="10">T5 / CLIP</text>
+
+        <!-- Arrow: Text Encoder -> DiT (straight down into top) -->
+        <line x1="280" y1="80" x2="280" y2="97" stroke="var(--blue)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-blue)"/>
+        <text x="296" y="95" fill="var(--blue)" font-size="9" font-style="italic">text embeddings</text>
+
+        <!-- Row 2: Main flow: Noise -> DiT -> Clean Latent -> VAE Decoder -> Video -->
+        <rect x="20" y="110" width="120" height="50" rx="8" fill="var(--bg-card)" stroke="var(--border)" stroke-width="1.5"/>
+        <text x="80" y="132" text-anchor="middle" fill="var(--fg)" font-size="12" font-weight="600">Noise z&#x2080;</text>
+        <text x="80" y="147" text-anchor="middle" fill="var(--fg-muted)" font-size="10">~ N(0, I)</text>
+
+        <line x1="140" y1="135" x2="198" y2="135" stroke="var(--emerald)" stroke-width="1.5" marker-end="url(#ah-emerald)"/>
+
+        <!-- DiT box (larger, central) -->
+        <rect x="200" y="105" width="160" height="60" rx="8" fill="rgba(16,185,129,0.06)" stroke="rgba(16,185,129,0.5)" stroke-width="2"/>
+        <text x="280" y="132" text-anchor="middle" fill="var(--emerald)" font-size="13" font-weight="700">DiT</text>
+        <text x="280" y="150" text-anchor="middle" fill="var(--fg-muted)" font-size="10">N denoising steps</text>
+
+        <line x1="360" y1="135" x2="398" y2="135" stroke="var(--emerald)" stroke-width="1.5" marker-end="url(#ah-emerald)"/>
+
+        <rect x="400" y="110" width="130" height="50" rx="8" fill="var(--bg-card)" stroke="var(--border)" stroke-width="1.5"/>
+        <text x="465" y="130" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">Clean Latent z&#x2081;</text>
+        <text x="465" y="147" text-anchor="middle" fill="var(--fg-muted)" font-size="10">denoised</text>
+
+        <line x1="530" y1="135" x2="568" y2="135" stroke="var(--violet)" stroke-width="1.5" marker-end="url(#ah-violet)"/>
+
+        <rect x="570" y="110" width="110" height="50" rx="8" fill="rgba(139,92,246,0.06)" stroke="rgba(139,92,246,0.4)" stroke-width="1.5"/>
+        <text x="625" y="132" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">VAE Decoder</text>
+        <text x="625" y="147" text-anchor="middle" fill="var(--fg-muted)" font-size="10">latent &rarr; pixels</text>
+
+        <line x1="680" y1="135" x2="718" y2="135" stroke="var(--amber)" stroke-width="1.5" marker-end="url(#ah-amber)"/>
+
+        <rect x="720" y="110" width="90" height="50" rx="8" fill="rgba(245,158,11,0.06)" stroke="rgba(245,158,11,0.4)" stroke-width="1.5"/>
+        <text x="765" y="130" text-anchor="middle" fill="var(--amber)" font-size="13" font-weight="700">Video</text>
+        <text x="765" y="147" text-anchor="middle" fill="var(--fg-muted)" font-size="10">T&times;H&times;W&times;3</text>
+
+        <!-- Row 3: Timestep -> DiT (centered below DiT) -->
+        <rect x="220" y="210" width="120" height="44" rx="8" fill="var(--bg-card)" stroke="var(--border)" stroke-width="1.5"/>
+        <text x="280" y="230" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">Timestep t</text>
+        <text x="280" y="244" text-anchor="middle" fill="var(--fg-muted)" font-size="10">schedule</text>
+
+        <!-- Arrow: Timestep -> DiT (straight up into bottom) -->
+        <line x1="280" y1="210" x2="280" y2="173" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ah-muted)"/>
+        <text x="296" y="197" fill="var(--fg-muted)" font-size="9" font-style="italic">modulates layers</text>
+
+        <!-- Labels on main arrows -->
+        <text x="165" y="129" text-anchor="middle" fill="var(--fg-muted)" font-size="8">input</text>
+        <text x="379" y="129" text-anchor="middle" fill="var(--fg-muted)" font-size="8">output</text>
+        <text x="549" y="129" text-anchor="middle" fill="var(--fg-muted)" font-size="8">decode</text>
+      </svg>
+    </div>
+    <!-- Mobile fallback: vertical layout -->
+    <div class="pipeline-mobile-fallback">
+      <div class="pm-step"><div class="pm-box" style="border-color:rgba(59,130,246,0.4)">Text Prompt</div></div>
+      <div class="pm-arrow">&darr; <span>encode</span></div>
+      <div class="pm-step"><div class="pm-box" style="border-color:rgba(59,130,246,0.4);background:rgba(59,130,246,0.05)">Text Encoder (T5/CLIP)</div></div>
+      <div class="pm-arrow">&darr; <span>text embeddings</span></div>
+      <div class="pm-step">
+        <div class="pm-row">
+          <div class="pm-box-sm">Noise z<sub>0</sub></div>
+          <span class="pm-plus">&rarr;</span>
+          <div class="pm-box" style="border-color:rgba(16,185,129,0.5);background:rgba(16,185,129,0.05);color:#10b981;font-weight:700">DiT <small style="color:#94a3b8;font-weight:400">&larr; Timestep t</small></div>
+        </div>
+      </div>
+      <div class="pm-arrow">&darr; <span>denoised latent</span></div>
+      <div class="pm-step"><div class="pm-box" style="border-color:rgba(139,92,246,0.4);background:rgba(139,92,246,0.05)">VAE Decoder</div></div>
+      <div class="pm-arrow">&darr; <span>pixels</span></div>
+      <div class="pm-step"><div class="pm-box" style="border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.05);color:#f59e0b;font-weight:700">Video (T&times;H&times;W&times;3)</div></div>
+    </div>
+  </div>
+
+  <h2>Step by Step</h2>
+
+  <div class="step-cards">
+    <div class="step-card" data-step="1">
+      <div class="step-num" style="background:var(--blue)">1</div>
+      <div class="step-body">
+        <h3>Encode Text</h3>
+        <p>The text prompt is encoded into a sequence of embedding vectors using a pre-trained text encoder (T5-XXL, CLIP, or an MLLM). These embeddings capture the semantic meaning of the prompt and will guide the generation process.</p>
+        <p><strong>Key insight:</strong> Different encoders have complementary strengths. CLIP provides aligned image-text embeddings (good for global semantics), while T5 provides rich token-level representations (good for compositional details). Many models use both.</p>
+      </div>
+    </div>
+    <div class="step-card" data-step="2">
+      <div class="step-num" style="background:var(--emerald)">2</div>
+      <div class="step-body">
+        <h3>Denoise with DiT</h3>
+        <p>Starting from pure Gaussian noise in the latent space, the Diffusion Transformer iteratively refines the latent representation. At each step, it predicts a velocity field (flow matching) or noise (DDPM) conditioned on the text embeddings and current timestep.</p>
+        <p><strong>Key insight:</strong> The DiT operates on <em>spacetime patches</em> &mdash; 3D tokens that span both space and time. This allows a single transformer to jointly model spatial composition and temporal dynamics.</p>
+      </div>
+    </div>
+    <div class="step-card" data-step="3">
+      <div class="step-num" style="background:var(--violet)">3</div>
+      <div class="step-body">
+        <h3>Decode Latent to Pixels</h3>
+        <p>The clean latent z<sub>1</sub> is decoded back to pixel space by the VAE decoder. This involves upsampling in both spatial and temporal dimensions using transposed 3D convolutions.</p>
+        <p><strong>Key insight:</strong> The VAE was pre-trained separately to achieve high-fidelity reconstruction. A 4&times;8&times;8 compression ratio means the DiT only needs to operate on a representation that is 256&times; smaller than the original video.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Why Latent Space?</h2>
+  <div class="callout callout-math">
+    <div class="callout-icon">&#128200;</div>
+    <div class="callout-body">
+      <h4>Computational Cost Comparison</h4>
+      <p>For a 5-second, 720p, 24fps video:</p>
+      <div class="code-block">
+Pixel space:  120 frames &times; 1280 &times; 720 &times; 3 = <strong>332M values</strong>
+Latent space: 30 &times; 160 &times; 90 &times; 16           = <strong>6.9M values</strong>
+Ratio: ~48&times; fewer values to denoise
+      </div>
+      <p>Self-attention in the transformer scales as O(n&sup2;). Reducing the sequence length by 48&times; reduces attention cost by ~2,300&times;. This is why all frontier video models operate in latent space.</p>
+    </div>
+  </div>
+
+  <h2>Classifier-Free Guidance</h2>
+  <p>At inference time, CFG amplifies the effect of text conditioning. The model is run twice per step &mdash; once with the text prompt, once without &mdash; and the outputs are combined:</p>
+  <div class="math-block" data-math="v_{\text{guided}} = v_{\text{uncond}} + w \cdot (v_{\text{cond}} - v_{\text{uncond}})"></div>
+  <p>The guidance scale <em>w</em> (typically 5&ndash;15 for video) controls how strongly the output follows the prompt. Higher values produce more faithful but less diverse outputs.</p>
+  <div class="callout callout-warn">
+    <div class="callout-icon">&#9888;</div>
+    <div class="callout-body">
+      <h4>CFG Doubles Compute</h4>
+      <p>Because CFG requires two forward passes per step, it doubles inference cost. Recent innovations like <strong>CFG-Zero*</strong> (2025) optimize the guidance scaling and zero out early ODE steps where velocity estimation is most inaccurate, improving quality without extra cost.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: VAE ===================== -->
+<section id="vae" class="page">
+  <h1>3D VAE Tokenization</h1>
+  <p class="section-intro">Before the diffusion model can work its magic, raw video must be compressed into a compact latent representation. This is the job of the 3D Variational Autoencoder.</p>
+
+  <h2>Why Compress?</h2>
+  <p>A single second of 720p video contains ~71 million pixel values. Running diffusion directly in pixel space would require attention over millions of tokens &mdash; computationally impossible. The VAE compresses this by <strong>256&times;</strong> spatially (4&times; temporal, 8&times; in each spatial dimension), making diffusion tractable.</p>
+
+  <h2>Encoder-Decoder Architecture</h2>
+  <div class="diagram-card">
+    <div class="diagram-title">3D VAE Pipeline &mdash; Concrete Example</div>
+    <div class="vae-pipeline">
+      <div class="vae-box vae-input">
+        <div class="vae-label">Video Input</div>
+        <div class="vae-dims">120 &times; 854 &times; 480 &times; 3</div>
+        <div class="vae-note">~148M values</div>
+      </div>
+      <div class="vae-arrow">
+        <span class="arrow-label">3D Conv &darr;</span>
+        &rarr;
+      </div>
+      <div class="vae-box vae-encoder" data-color="violet">
+        <div class="vae-label">Encoder</div>
+        <div class="vae-dims">Strided 3D Conv</div>
+        <div class="vae-note">&mu;, log&sigma;&sup2;</div>
+      </div>
+      <div class="vae-arrow">
+        <span class="arrow-label">&mu; + &sigma;&epsilon;</span>
+        &rarr;
+      </div>
+      <div class="vae-box vae-latent" data-color="violet">
+        <div class="vae-label">Latent z</div>
+        <div class="vae-dims">30 &times; 107 &times; 60 &times; 16</div>
+        <div class="vae-note">~3.1M values</div>
+      </div>
+      <div class="vae-arrow">
+        <span class="arrow-label">decode</span>
+        &rarr;
+      </div>
+      <div class="vae-box vae-decoder" data-color="violet">
+        <div class="vae-label">Decoder</div>
+        <div class="vae-dims">Transposed 3D Conv</div>
+        <div class="vae-note">upsample</div>
+      </div>
+      <div class="vae-arrow">
+        <span class="arrow-label">3D Conv &uarr;</span>
+        &rarr;
+      </div>
+      <div class="vae-box vae-output">
+        <div class="vae-label">Reconstructed</div>
+        <div class="vae-dims">120 &times; 854 &times; 480 &times; 3</div>
+        <div class="vae-note">~148M values</div>
+      </div>
+    </div>
+    <div class="compression-badge">Compression: <strong>4&times;8&times;8 = 256&times;</strong> spatial &middot; <strong>48&times;</strong> total with C=16</div>
+  </div>
+
+  <h2>Causal Convolutions</h2>
+  <p>Standard 3D convolutions look at both past and future frames. This is problematic for generation: <strong>the first frame should be encodable without needing future frames</strong>. Causal convolutions solve this with asymmetric padding &mdash; padding only on the past side.</p>
+
+  <div class="diagram-card">
+    <div class="diagram-title">Standard vs Causal 3D Convolution</div>
+    <div class="causal-diagram">
+      <div class="causal-panel">
+        <h4>Standard Conv (kernel=3)</h4>
+        <div class="frame-row">
+          <div class="frame past">t-1</div>
+          <div class="frame current">t</div>
+          <div class="frame future">t+1</div>
+        </div>
+        <p class="frame-caption">Sees future frames &mdash; not causal</p>
+      </div>
+      <div class="causal-panel">
+        <h4>Causal Conv (kernel=3)</h4>
+        <div class="frame-row">
+          <div class="frame past">t-2</div>
+          <div class="frame past">t-1</div>
+          <div class="frame current">t</div>
+        </div>
+        <p class="frame-caption">Only past frames &mdash; causal &#10003;</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="advanced-math">
+    <h3>VAE Training Objective</h3>
+    <p>The VAE is trained with a multi-objective loss:</p>
+    <div class="math-block" data-math="\mathcal{L} = \underbrace{\|x - \hat{x}\|_1}_{\text{reconstruction}} + \lambda_{\text{LPIPS}} \underbrace{\mathcal{L}_{\text{LPIPS}}(x, \hat{x})}_{\text{perceptual}} + \lambda_{\text{GAN}} \underbrace{\mathcal{L}_{\text{GAN}}(\hat{x})}_{\text{adversarial}} + \lambda_{\text{KL}} \underbrace{D_{\text{KL}}(q(z|x) \| \mathcal{N}(0,I))}_{\text{regularization}}"></div>
+    <div class="math-explanation">
+      <ul>
+        <li><strong>L1 reconstruction:</strong> Pixel-level fidelity between input and output</li>
+        <li><strong>LPIPS:</strong> Perceptual similarity via deep features (VGG)</li>
+        <li><strong>GAN:</strong> Adversarial loss from a PatchGAN discriminator for sharpness</li>
+        <li><strong>KL divergence:</strong> Regularizes latent distribution toward N(0, I) so the diffusion model can sample from it</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Comparing Video Tokenizers</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Model</th><th>Compression</th><th>Channels</th><th>Causal</th><th>Key Feature</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Wan-VAE</td><td>4&times;8&times;8</td><td>16</td><td class="yes">Yes</td><td>RMSNorm, asymmetric decoder, unlimited length</td></tr>
+        <tr><td>CogVideoX</td><td>4&times;8&times;8</td><td>16</td><td class="yes">Yes</td><td>3D causal CNN, context-parallel decoding</td></tr>
+        <tr><td>HunyuanVideo</td><td>4&times;8&times;8</td><td>16</td><td class="yes">Yes</td><td>CausalConv3D, shared image/video arch</td></tr>
+        <tr><td>Movie Gen (Meta)</td><td>8&times;8&times;8</td><td>16</td><td class="yes">Yes</td><td>TAE with 1D temporal conv + attention</td></tr>
+        <tr><td>Cosmos (NVIDIA)</td><td>8&times;16&times;16</td><td>16</td><td class="yes">Yes</td><td>Highest compression; world model focus</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout callout-info">
+    <div class="callout-icon">&#128161;</div>
+    <div class="callout-body">
+      <h4>The 4&times;8&times;8 Consensus</h4>
+      <p>As of 2025, most leading video models converge on <strong>4&times;8&times;8</strong> compression (4&times; temporal, 8&times; each spatial dimension). This is the sweet spot where temporal detail for smooth motion is preserved while being small enough for efficient diffusion training.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: FLOW MATCHING ===================== -->
+<section id="flow-matching" class="page">
+  <h1>Flow Matching</h1>
+  <p class="section-intro">Flow matching is the training objective that replaced DDPM for frontier video models. Instead of learning to predict and remove noise step-by-step, it learns a continuous velocity field along straight-line paths.</p>
+
+  <h2>DDPM vs Flow Matching</h2>
+  <div class="two-col">
+    <div class="card card-muted">
+      <h3>DDPM (Traditional)</h3>
+      <ul>
+        <li>Discrete timesteps (T = 1000)</li>
+        <li>Learns noise prediction: &epsilon;<sub>&theta;</sub>(x<sub>t</sub>, t)</li>
+        <li>Requires noise schedule design</li>
+        <li>~50&ndash;250 sampling steps</li>
+        <li>Curved, stochastic paths</li>
+      </ul>
+    </div>
+    <div class="card card-accent" data-color="emerald">
+      <h3>Flow Matching (Modern)</h3>
+      <ul>
+        <li>Continuous time t &isin; [0, 1]</li>
+        <li>Learns velocity field: v<sub>&theta;</sub>(x<sub>t</sub>, t)</li>
+        <li>Schedule-free (straight paths)</li>
+        <li>~25&ndash;50 sampling steps</li>
+        <li>Straight optimal-transport paths</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Flow Paths Visualization -->
+  <div class="diagram-card">
+    <div class="diagram-title">Transport Paths: DDPM vs Flow Matching</div>
+    <div class="flow-paths-container">
+      <div class="flow-panel">
+        <h4>DDPM</h4>
+        <svg id="ddpm-paths" viewBox="0 0 280 200" class="flow-svg"></svg>
+        <p class="flow-caption">Curved, multi-step stochastic paths</p>
+      </div>
+      <div class="flow-panel">
+        <h4>Flow Matching</h4>
+        <svg id="fm-paths" viewBox="0 0 280 200" class="flow-svg"></svg>
+        <p class="flow-caption">Straight optimal-transport paths</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>The Core Idea</h2>
+  <p>Flow matching constructs a time-dependent probability path p<sub>t</sub>(x) that smoothly interpolates between noise (t=0) and data (t=1). A neural network learns the velocity field v<sub>&theta;</sub> that generates this flow.</p>
+
+  <div class="intuition-box">
+    <h3>&#128161; Intuition: Think of it as transportation</h3>
+    <p>Imagine a fleet of particles starting at random positions (noise) that need to reach specific destinations (data). DDPM gives them wandering, curved routes. Flow matching gives them <strong>straight-line highways</strong> &mdash; the shortest possible paths (optimal transport). Shorter paths = easier to learn = fewer steps to travel.</p>
+  </div>
+
+  <div class="advanced-math">
+    <h3>Conditional Flow Matching (CFM)</h3>
+    <p>Given a data sample x<sub>1</sub> and noise sample x<sub>0</sub> ~ N(0, I), the interpolation at time t is:</p>
+    <div class="math-block" data-math="x_t = (1 - t) \cdot x_0 + t \cdot x_1"></div>
+    <p>The target velocity field (time derivative of x<sub>t</sub>) is simply:</p>
+    <div class="math-block" data-math="u_t = \frac{dx_t}{dt} = x_1 - x_0"></div>
+    <p>The CFM training loss minimizes MSE between predicted and target velocity:</p>
+    <div class="math-block" data-math="\mathcal{L}_{\text{CFM}} = \mathbb{E}_{t \sim U(0,1),\; x_0 \sim \mathcal{N}(0,I),\; x_1 \sim p_{\text{data}}} \left\| v_\theta(x_t, t) - (x_1 - x_0) \right\|^2"></div>
+    <p>This is called <strong>Rectified Flow</strong> &mdash; the straight-line interpolation creates optimal transport paths that minimize kinetic energy.</p>
+
+    <h3>Sampling (Inference)</h3>
+    <p>At inference, we solve the ODE from t=0 to t=1 using Euler's method:</p>
+    <div class="math-block" data-math="x_{t+\Delta t} = x_t + \Delta t \cdot v_\theta(x_t, t, \text{text})"></div>
+    <p>With N steps, &Delta;t = 1/N. Typical production: N = 25&ndash;50.</p>
+  </div>
+
+  <h2>Flow Matching Variants</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Variant</th><th>Key Idea</th><th>Used By</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Rectified Flow</td><td>Straight-line OT paths, velocity prediction</td><td>SD3, FLUX, Wan 2.1, Goku</td></tr>
+        <tr><td>Conditional FM (CFM)</td><td>Conditional probability paths, tractable vector fields</td><td>HunyuanVideo, Movie Gen</td></tr>
+        <tr><td>OT-CFM</td><td>Optimal transport coupling (paths don't cross)</td><td>SD3 (with mini-batch OT)</td></tr>
+        <tr><td>Stochastic Interpolants</td><td>Most general framework, allows stochastic components</td><td>Theoretical foundation</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="advanced-math">
+    <h3>Noise Schedules for Flow Matching</h3>
+    <p><strong>Logit-Normal Timestep Sampling</strong> (SD3, Movie Gen): Instead of sampling t uniformly, apply sigmoid(Normal(&mu;, &sigma;)) to concentrate on middle timesteps where learning is most informative:</p>
+    <div class="math-block" data-math="t = \sigma\left(\mu + s \cdot \mathcal{N}(0, 1)\right), \quad \text{where } \sigma(x) = \frac{1}{1+e^{-x}}"></div>
+    <p><strong>Resolution-dependent shifting</strong> (SD3): Higher resolutions need higher shift values to manage noise appropriately, controlled by a dynamic shifting parameter.</p>
+  </div>
+</section>
+
+<!-- ===================== SECTION: DiT ===================== -->
+<section id="dit" class="page">
+  <h1>Diffusion Transformers (DiT)</h1>
+  <p class="section-intro">The Diffusion Transformer replaced the U-Net as the backbone of generative models. It processes noisy latents as sequences of patch tokens using standard transformer blocks with specialized conditioning.</p>
+
+  <h2>Architecture Overview</h2>
+  <div class="diagram-card">
+    <div class="diagram-title">DiT Processing Pipeline</div>
+    <div class="dit-pipeline">
+      <div class="dit-box">Noisy Latent<span>input</span></div>
+      <div class="dit-arrow">&rarr;</div>
+      <div class="dit-box dit-accent">Patchify<span>2&times;2 spatial</span></div>
+      <div class="dit-arrow">&rarr;</div>
+      <div class="dit-box">+ Pos Embed<span>sinusoidal / RoPE</span></div>
+      <div class="dit-arrow">&rarr;</div>
+      <div class="dit-box dit-accent dit-main">N &times; DiT Block<span>transformer</span></div>
+      <div class="dit-arrow">&rarr;</div>
+      <div class="dit-box">Unpatchify<span>linear decode</span></div>
+      <div class="dit-arrow">&rarr;</div>
+      <div class="dit-box">Predicted v<span>velocity field</span></div>
+    </div>
+  </div>
+
+  <h2>The DiT Block</h2>
+  <div class="diagram-card">
+    <div class="diagram-title">adaLN-Zero DiT Block (following Peebles &amp; Xie, 2023)</div>
+    <!-- SVG diagram mimicking the classic transformer / DiT block style -->
+    <div style="display:flex;justify-content:center;overflow-x:auto;padding:1rem 0;">
+      <svg viewBox="0 0 420 520" width="420" height="520" aria-label="DiT Block diagram">
+        <defs>
+          <marker id="arr-fg" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="var(--fg)"/>
+          </marker>
+          <marker id="arr-em" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="var(--emerald)"/>
+          </marker>
+        </defs>
+
+        <!-- ========== Input at bottom ========== -->
+        <text x="160" y="510" text-anchor="middle" fill="var(--fg-muted)" font-size="12" font-weight="600">Input x</text>
+        <line x1="160" y1="498" x2="160" y2="472" stroke="var(--fg)" stroke-width="1.5" marker-end="url(#arr-fg)"/>
+
+        <!-- ========== adaLN #1 ========== -->
+        <rect x="90" y="440" width="140" height="32" rx="6" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.4)" stroke-width="1.5"/>
+        <text x="160" y="461" text-anchor="middle" fill="#c4b5fd" font-size="12" font-weight="600">adaLN</text>
+
+        <!-- Skip connection #1: left side bypass around Attn block -->
+        <!-- Start: fork from input line at y=480 -->
+        <line x1="160" y1="480" x2="55" y2="480" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="55" y1="480" x2="55" y2="350" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/>
+
+        <!-- Arrow up from adaLN #1 into Self-Attention -->
+        <line x1="160" y1="440" x2="160" y2="418" stroke="var(--fg)" stroke-width="1.5" marker-end="url(#arr-fg)"/>
+
+        <!-- ========== Multi-Head Self-Attention ========== -->
+        <rect x="80" y="386" width="160" height="32" rx="6" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.5)" stroke-width="1.5"/>
+        <text x="160" y="407" text-anchor="middle" fill="var(--emerald)" font-size="12" font-weight="600">Multi-Head Self-Attention</text>
+
+        <!-- Arrow up from Self-Attention -->
+        <line x1="160" y1="386" x2="160" y2="368" stroke="var(--fg)" stroke-width="1.5"/>
+
+        <!-- ========== Scale gate α₁ ========== -->
+        <circle cx="160" cy="360" r="12" fill="none" stroke="rgba(245,158,11,0.5)" stroke-width="1.5"/>
+        <text x="160" y="364" text-anchor="middle" fill="var(--amber)" font-size="11" font-weight="700">&times;</text>
+        <text x="183" y="364" fill="var(--amber)" font-size="10" font-style="italic">&alpha;&#x2081;</text>
+
+        <!-- Arrow up from α₁ to Add node #1 -->
+        <line x1="160" y1="348" x2="160" y2="336" stroke="var(--fg)" stroke-width="1.5"/>
+
+        <!-- ========== Add #1 (residual) ========== -->
+        <circle cx="160" cy="328" r="12" fill="none" stroke="var(--fg)" stroke-width="1.5"/>
+        <text x="160" y="333" text-anchor="middle" fill="var(--fg)" font-size="14" font-weight="700">+</text>
+        <!-- Skip connection arrives here -->
+        <line x1="55" y1="350" x2="55" y2="328" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="55" y1="328" x2="148" y2="328" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr-fg)"/>
+
+        <!-- Arrow up from Add #1 -->
+        <line x1="160" y1="316" x2="160" y2="298" stroke="var(--fg)" stroke-width="1.5" marker-end="url(#arr-fg)"/>
+
+        <!-- ========== adaLN #2 ========== -->
+        <rect x="90" y="266" width="140" height="32" rx="6" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.4)" stroke-width="1.5"/>
+        <text x="160" y="287" text-anchor="middle" fill="#c4b5fd" font-size="12" font-weight="600">adaLN</text>
+
+        <!-- Skip connection #2: left side bypass around MLP block -->
+        <line x1="160" y1="306" x2="55" y2="306" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="55" y1="306" x2="55" y2="176" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/>
+
+        <!-- Arrow up from adaLN #2 to MLP -->
+        <line x1="160" y1="266" x2="160" y2="244" stroke="var(--fg)" stroke-width="1.5" marker-end="url(#arr-fg)"/>
+
+        <!-- ========== MLP / Pointwise Feedforward ========== -->
+        <rect x="80" y="212" width="160" height="32" rx="6" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.5)" stroke-width="1.5"/>
+        <text x="160" y="233" text-anchor="middle" fill="var(--emerald)" font-size="12" font-weight="600">Pointwise Feedforward</text>
+
+        <!-- Arrow up from MLP -->
+        <line x1="160" y1="212" x2="160" y2="194" stroke="var(--fg)" stroke-width="1.5"/>
+
+        <!-- ========== Scale gate α₂ ========== -->
+        <circle cx="160" cy="186" r="12" fill="none" stroke="rgba(245,158,11,0.5)" stroke-width="1.5"/>
+        <text x="160" y="190" text-anchor="middle" fill="var(--amber)" font-size="11" font-weight="700">&times;</text>
+        <text x="183" y="190" fill="var(--amber)" font-size="10" font-style="italic">&alpha;&#x2082;</text>
+
+        <!-- Arrow up from α₂ to Add node #2 -->
+        <line x1="160" y1="174" x2="160" y2="162" stroke="var(--fg)" stroke-width="1.5"/>
+
+        <!-- ========== Add #2 (residual) ========== -->
+        <circle cx="160" cy="154" r="12" fill="none" stroke="var(--fg)" stroke-width="1.5"/>
+        <text x="160" y="159" text-anchor="middle" fill="var(--fg)" font-size="14" font-weight="700">+</text>
+        <!-- Skip connection arrives here -->
+        <line x1="55" y1="176" x2="55" y2="154" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="55" y1="154" x2="148" y2="154" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr-fg)"/>
+
+        <!-- Arrow up from Add #2 to Output -->
+        <line x1="160" y1="142" x2="160" y2="116" stroke="var(--fg)" stroke-width="1.5" marker-end="url(#arr-fg)"/>
+
+        <!-- ========== Output at top ========== -->
+        <text x="160" y="108" text-anchor="middle" fill="var(--fg-muted)" font-size="12" font-weight="600">Output</text>
+
+        <!-- ========== Conditioning (right side) ========== -->
+        <!-- Conditioning embedding box -->
+        <rect x="280" y="330" width="130" height="80" rx="8" fill="rgba(59,130,246,0.06)" stroke="rgba(59,130,246,0.3)" stroke-width="1.5"/>
+        <text x="345" y="352" text-anchor="middle" fill="var(--fg-muted)" font-size="10">Conditioning MLP</text>
+        <text x="345" y="370" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">t + c &rarr; MLP</text>
+        <text x="345" y="388" text-anchor="middle" fill="var(--amber)" font-size="10">&rarr; &gamma;&#x2081;, &beta;&#x2081;, &alpha;&#x2081;</text>
+        <text x="345" y="402" text-anchor="middle" fill="var(--amber)" font-size="10">&rarr; &gamma;&#x2082;, &beta;&#x2082;, &alpha;&#x2082;</text>
+
+        <!-- Arrows from conditioning to adaLN #1 -->
+        <path d="M 280 370 L 240 370 Q 235 370 235 400 L 235 456 L 230 456" stroke="rgba(139,92,246,0.5)" stroke-width="1.2" fill="none" marker-end="url(#arr-em)"/>
+        <text x="250" y="425" fill="#c4b5fd" font-size="9">&gamma;&#x2081;, &beta;&#x2081;</text>
+
+        <!-- Arrows from conditioning to adaLN #2 -->
+        <path d="M 280 370 L 260 370 Q 255 370 255 340 L 255 282 L 230 282" stroke="rgba(139,92,246,0.5)" stroke-width="1.2" fill="none" marker-end="url(#arr-em)"/>
+        <text x="262" y="310" fill="#c4b5fd" font-size="9">&gamma;&#x2082;, &beta;&#x2082;</text>
+
+        <!-- Arrow from conditioning to α₁ -->
+        <path d="M 280 390 L 250 390 Q 245 390 245 375 L 245 360 L 172 360" stroke="rgba(245,158,11,0.3)" stroke-width="1" fill="none" stroke-dasharray="3 2"/>
+
+        <!-- Arrow from conditioning to α₂ -->
+        <path d="M 280 390 L 270 390 Q 265 390 265 330 L 265 186 L 172 186" stroke="rgba(245,158,11,0.3)" stroke-width="1" fill="none" stroke-dasharray="3 2"/>
+
+        <!-- Input labels for conditioning -->
+        <text x="345" y="440" text-anchor="middle" fill="var(--fg-muted)" font-size="10">&uarr;</text>
+        <text x="320" y="460" fill="var(--blue)" font-size="10" font-weight="500">t <tspan fill="var(--fg-muted)" font-weight="400">timestep</tspan></text>
+        <text x="320" y="475" fill="var(--blue)" font-size="10" font-weight="500">c <tspan fill="var(--fg-muted)" font-weight="400">text embed</tspan></text>
+
+        <!-- Legend -->
+        <line x1="65" y1="60" x2="85" y2="60" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="90" y="64" fill="var(--fg-muted)" font-size="9">skip connection</text>
+        <circle cx="75" cy="78" r="5" fill="none" stroke="rgba(245,158,11,0.5)" stroke-width="1"/>
+        <text x="75" y="81" text-anchor="middle" fill="var(--amber)" font-size="7">&times;</text>
+        <text x="90" y="82" fill="var(--fg-muted)" font-size="9">zero-init scale gate</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="intuition-box">
+    <h3>&#128161; Key Innovation: adaLN-Zero</h3>
+    <p>Instead of cross-attention for conditioning (like U-Net diffusion), DiT uses <strong>Adaptive Layer Normalization</strong>. The timestep t and text conditioning c are combined and projected into scale (&gamma;) and shift (&beta;) parameters that modulate the LayerNorm in each block. The "Zero" variant initializes the final linear layer to zero, so each block starts as an identity function &mdash; this stabilizes training significantly.</p>
+  </div>
+
+  <h2>DiT Architecture Variants</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Variant</th><th>Architecture</th><th>Conditioning</th><th>Used By</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Original DiT</td><td>Plain ViT, adaLN-Zero</td><td>adaLN (timestep + class)</td><td>DiT-XL/2 (675M)</td></tr>
+        <tr><td>MMDiT</td><td>Dual-stream (text + image)</td><td>Joint attention + adaLN</td><td>SD3 (8B)</td></tr>
+        <tr><td>FLUX</td><td>Double-stream &rarr; single-stream</td><td>Joint attention + adaLN</td><td>FLUX.1 (12B), FLUX.2 (32B)</td></tr>
+        <tr><td>Expert Transformer</td><td>Full 3D attention</td><td>Expert adaLN + 3D RoPE</td><td>CogVideoX (5B)</td></tr>
+        <tr><td>Dual-to-Single</td><td>Dual-stream early, single late</td><td>MLLM + cross-attn</td><td>HunyuanVideo (13B)</td></tr>
+        <tr><td>LLaMA-DiT</td><td>LLaMA-3 backbone</td><td>Triple text encoder</td><td>Movie Gen (30B)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>3D DiT for Video: Spacetime Patches</h2>
+  <p>For video, the 2D patchification is extended to 3D. The compressed video latent is divided into spacetime patches of size (p<sub>t</sub> &times; p<sub>h</sub> &times; p<sub>w</sub>), each becoming a token in the transformer sequence.</p>
+
+  <div class="diagram-card">
+    <div class="diagram-title">Spatial vs Spacetime Patchification</div>
+    <div class="patch-comparison">
+      <div class="patch-panel">
+        <h4>2D Patches (Image DiT)</h4>
+        <div class="patch-grid" id="patch-2d"></div>
+        <p>H/p &times; W/p tokens per image</p>
+      </div>
+      <div class="patch-panel">
+        <h4>3D Spacetime Patches (Video DiT)</h4>
+        <div class="patch-grid-3d" id="patch-3d"></div>
+        <p>T/p<sub>t</sub> &times; H/p<sub>h</sub> &times; W/p<sub>w</sub> tokens per video</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Temporal Attention Strategies</h2>
+  <div class="three-col">
+    <div class="card card-accent" data-color="emerald">
+      <h3>Full 3D Attention</h3>
+      <p>All spacetime tokens attend to all others. Best quality but O(n&sup2;) over the full sequence.</p>
+      <p class="card-tag">CogVideoX, Wan 2.1</p>
+    </div>
+    <div class="card">
+      <h3>Factored (2+1)D</h3>
+      <p>Alternating spatial-only and temporal-only attention. Much cheaper but misses cross-correlations.</p>
+      <p class="card-tag">Open-Sora (STDiT)</p>
+    </div>
+    <div class="card">
+      <h3>Window/Tile Attention</h3>
+      <p>Spatiotemporal windows with sliding overlap. Hardware-aware design for efficiency.</p>
+      <p class="card-tag">HunyuanVideo 1.5 (STA)</p>
+    </div>
+  </div>
+
+  <div class="advanced-math">
+    <h3>Scaling Laws for DiT</h3>
+    <p>DiT follows power-law scaling relationships similar to LLMs (October 2024):</p>
+    <div class="math-block" data-math="L(C) = L_\infty + A \cdot C^{-\alpha}"></div>
+    <p>where C is compute (FLOPs), L is validation loss, and &alpha; is the scaling exponent. For video DiT specifically (CVPR 2025), models are <strong>much more sensitive to learning rate and batch size</strong> than LLMs, requiring hyperparameter scaling laws that predict optimal settings for any given compute budget.</p>
+  </div>
+</section>
+
+<!-- ===================== SECTION: CONDITIONING ===================== -->
+<section id="conditioning" class="page">
+  <h1>Text Conditioning</h1>
+  <p class="section-intro">Text conditioning is how the model understands what to generate. The choice of text encoder and conditioning mechanism profoundly impacts generation quality and text faithfulness.</p>
+
+  <h2>Text Encoder Landscape</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Encoder</th><th>Type</th><th>Params</th><th>Strength</th><th>Used By</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>CLIP-L/G</td><td>Contrastive (dual-tower)</td><td>~400M</td><td>Aligned image-text embeddings, global semantics</td><td>SD3, FLUX, HunyuanVideo</td></tr>
+        <tr><td>T5-XXL</td><td>Encoder-decoder (bidirectional)</td><td>~4.6B</td><td>Rich token-level semantics, long context</td><td>SD3, FLUX, CogVideoX, PixArt</td></tr>
+        <tr><td>Flan-T5-XXL</td><td>Instruction-tuned T5</td><td>~4.6B</td><td>Better instruction following</td><td>PixArt, Goku</td></tr>
+        <tr><td>umT5</td><td>Multilingual T5</td><td>~4.6B</td><td>Cross-lingual support</td><td>Wan 2.1</td></tr>
+        <tr><td>MLLM (LLaMA-based)</td><td>Decoder-only multimodal LLM</td><td>~7B+</td><td>Complex reasoning, zero-shot instructions</td><td>HunyuanVideo</td></tr>
+        <tr><td>UL2 + ByT5 + MetaCLIP</td><td>Triple encoder</td><td>~10B+</td><td>Reasoning + character-level + alignment</td><td>Movie Gen</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Why Dual/Triple Encoders?</h2>
+  <div class="intuition-box">
+    <h3>&#128161; Complementary Strengths</h3>
+    <p><strong>CLIP</strong> is trained contrastively on image-text pairs, so it produces embeddings that are naturally aligned between modalities. But its text representation is coarse (77-token limit) and misses compositional details.</p>
+    <p><strong>T5</strong> is a language model with bidirectional attention, producing rich token-level representations that capture complex relationships and long descriptions. But it has no visual alignment.</p>
+    <p>Using both gives you: global visual alignment (CLIP) + detailed semantic understanding (T5). Movie Gen goes further with a triple encoder adding character-level precision (ByT5) for accurate text rendering in video.</p>
+  </div>
+
+  <h2>Conditioning Mechanisms</h2>
+  <div class="conditioning-grid">
+    <div class="cond-card">
+      <h3>adaLN-Zero</h3>
+      <div class="cond-diagram">
+        <div class="cond-flow">
+          <span class="cond-node">t, c</span>
+          <span class="cond-arrow">&darr;</span>
+          <span class="cond-node accent">MLP</span>
+          <span class="cond-arrow">&darr;</span>
+          <span class="cond-node">&gamma;, &beta;, &alpha;</span>
+          <span class="cond-arrow">&darr;</span>
+          <span class="cond-node">Modulate LN</span>
+        </div>
+      </div>
+      <p>Projects timestep + conditioning into scale/shift/gate parameters. Compute-efficient, great for class conditioning.</p>
+      <p class="card-tag">Original DiT, all variants</p>
+    </div>
+    <div class="cond-card">
+      <h3>Cross-Attention</h3>
+      <div class="cond-diagram">
+        <div class="cond-flow">
+          <span class="cond-node">Text tokens</span>
+          <span class="cond-arrow">&darr;</span>
+          <span class="cond-node accent">K, V projection</span>
+          <span class="cond-arrow">&darr;</span>
+          <span class="cond-node">Attn(Q=image, K=text, V=text)</span>
+        </div>
+      </div>
+      <p>Dedicated cross-attention layers inject text embeddings. Better for rich, variable-length text.</p>
+      <p class="card-tag">Wan 2.1, PixArt, Cosmos</p>
+    </div>
+    <div class="cond-card">
+      <h3>Joint Attention (MMDiT)</h3>
+      <div class="cond-diagram">
+        <div class="cond-flow">
+          <span class="cond-node">Text + Image tokens</span>
+          <span class="cond-arrow">&darr;</span>
+          <span class="cond-node accent">Concat &rarr; Self-Attn</span>
+          <span class="cond-arrow">&darr;</span>
+          <span class="cond-node">Bidirectional modality flow</span>
+        </div>
+      </div>
+      <p>Separate weight streams per modality but joint attention on concatenated sequences. Most parameter-expensive, strongest text comprehension.</p>
+      <p class="card-tag">SD3, FLUX, HunyuanVideo</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: GENERATION TASKS ===================== -->
+<section id="tasks" class="page">
+  <h1>Generation Tasks</h1>
+  <p class="section-intro">Modern video generation systems support a family of related tasks beyond simple text-to-video. Understanding these tasks&mdash;and how they relate architecturally&mdash;is essential for building a complete system.</p>
+
+  <h2>Core Generation Tasks</h2>
+
+  <!-- SVG task relationship diagram -->
+  <div class="diagram-card">
+    <div class="diagram-title">Task Landscape</div>
+    <div style="display:flex;justify-content:center;overflow-x:auto;padding:1rem 0;">
+      <svg viewBox="0 0 700 340" width="700" height="340" style="max-width:100%;height:auto;">
+        <defs>
+          <marker id="arr-task" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="var(--emerald)"/>
+          </marker>
+        </defs>
+        <!-- Central DiT -->
+        <rect x="270" y="130" width="160" height="60" rx="10" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.5)" stroke-width="2"/>
+        <text x="350" y="157" text-anchor="middle" fill="var(--emerald)" font-size="14" font-weight="700">DiT Backbone</text>
+        <text x="350" y="175" text-anchor="middle" fill="var(--fg-muted)" font-size="10">shared architecture</text>
+        <!-- T2V -->
+        <rect x="20" y="20" width="120" height="44" rx="8" fill="rgba(59,130,246,0.06)" stroke="rgba(59,130,246,0.4)" stroke-width="1.5"/>
+        <text x="80" y="40" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">T2V</text>
+        <text x="80" y="54" text-anchor="middle" fill="var(--fg-muted)" font-size="9">text &rarr; video</text>
+        <line x1="140" y1="50" x2="268" y2="140" stroke="var(--blue)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr-task)"/>
+        <!-- I2V -->
+        <rect x="20" y="140" width="120" height="44" rx="8" fill="rgba(139,92,246,0.06)" stroke="rgba(139,92,246,0.4)" stroke-width="1.5"/>
+        <text x="80" y="160" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">I2V</text>
+        <text x="80" y="174" text-anchor="middle" fill="var(--fg-muted)" font-size="9">image &rarr; video</text>
+        <line x1="140" y1="162" x2="268" y2="160" stroke="var(--violet)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr-task)"/>
+        <!-- V2V -->
+        <rect x="20" y="260" width="120" height="44" rx="8" fill="rgba(245,158,11,0.06)" stroke="rgba(245,158,11,0.4)" stroke-width="1.5"/>
+        <text x="80" y="280" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">V2V</text>
+        <text x="80" y="294" text-anchor="middle" fill="var(--fg-muted)" font-size="9">video editing</text>
+        <line x1="140" y1="274" x2="268" y2="180" stroke="var(--amber)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr-task)"/>
+        <!-- T2I -->
+        <rect x="560" y="20" width="120" height="44" rx="8" fill="rgba(59,130,246,0.06)" stroke="rgba(59,130,246,0.4)" stroke-width="1.5"/>
+        <text x="620" y="40" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">T2I</text>
+        <text x="620" y="54" text-anchor="middle" fill="var(--fg-muted)" font-size="9">image = 1-frame video</text>
+        <line x1="560" y1="50" x2="432" y2="140" stroke="var(--blue)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr-task)"/>
+        <!-- Camera Control -->
+        <rect x="560" y="140" width="120" height="44" rx="8" fill="rgba(16,185,129,0.06)" stroke="rgba(16,185,129,0.4)" stroke-width="1.5"/>
+        <text x="620" y="160" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">Camera Ctrl</text>
+        <text x="620" y="174" text-anchor="middle" fill="var(--fg-muted)" font-size="9">pose conditioning</text>
+        <line x1="560" y1="162" x2="432" y2="160" stroke="var(--emerald)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr-task)"/>
+        <!-- Extension / Prediction -->
+        <rect x="560" y="260" width="120" height="44" rx="8" fill="rgba(239,68,68,0.06)" stroke="rgba(239,68,68,0.4)" stroke-width="1.5"/>
+        <text x="620" y="280" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600">Extend / Fill</text>
+        <text x="620" y="294" text-anchor="middle" fill="var(--fg-muted)" font-size="9">prediction, inpaint</text>
+        <line x1="560" y1="274" x2="432" y2="180" stroke="#ef4444" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr-task)"/>
+      </svg>
+    </div>
+  </div>
+
+  <h2>T2V: Text-to-Video</h2>
+  <p>The foundational task. A text prompt is encoded via T5/CLIP, the DiT denoises from Gaussian noise conditioned on text, and the VAE decodes the latent to pixels. All frontier models support this as the primary task.</p>
+
+  <h2>I2V: Image-to-Video</h2>
+  <p>Animate a static reference image into a video. Three architectural approaches:</p>
+  <div class="three-col">
+    <div class="card card-accent" data-color="violet">
+      <h3>Channel Concat</h3>
+      <p>Encode the first frame through VAE into latent z<sub>1</sub>. Concatenate channel-wise with noise tensor. DiT input channels expand (e.g., 16 &rarr; 32).</p>
+      <p class="card-tag">SVD, Emu-Video, AnimateAnything</p>
+    </div>
+    <div class="card card-accent" data-color="blue">
+      <h3>Frame Replacement</h3>
+      <p>Replace the first frame&rsquo;s noise with the clean latent z<sub>1</sub>. Input becomes {z<sub>1</sub>, &epsilon;<sub>2</sub>, ..., &epsilon;<sub>n</sub>}. Inject first-frame features into spatial attention K,V.</p>
+      <p class="card-tag">ConsistI2V, TI2V-Zero</p>
+    </div>
+    <div class="card card-accent" data-color="emerald">
+      <h3>Masking Strategy</h3>
+      <p>Conditioning frames are &ldquo;unmasked&rdquo; (timestep=0), frames to generate are noised. Different mask patterns enable I2V, continuation, and interpolation from <em>one model</em>.</p>
+      <p class="card-tag">Open-Sora, Wan 2.1</p>
+    </div>
+  </div>
+
+  <h2>V2V: Video-to-Video Editing</h2>
+  <p>Takes an existing video and modifies it. Approaches include DDIM inversion + re-denoising with new conditions, instruction-based editing (Movie Gen&rsquo;s &ldquo;backtranslation&rdquo; approach without supervised editing data), and first-frame editing propagated via I2V (AnyV2V). This remains the least mature task.</p>
+
+  <h2>T2I: Joint Image-Video Training</h2>
+  <div class="callout callout-tip">
+    <div class="callout-icon">&#128161;</div>
+    <div class="callout-body">
+      <h4>Key Insight: Images are 1-frame videos</h4>
+      <p>All frontier models treat images as single-frame videos in the <em>same</em> architecture. This is critical because image-text datasets are ~100&times; larger than video-text datasets, providing far richer visual concepts. Movie Gen uses a 1:3 image:video batch ratio. Open-Sora VAE trains on 20% images + 80% video.</p>
+    </div>
+  </div>
+
+  <h2>Other Tasks</h2>
+  <div class="two-col">
+    <div class="card">
+      <h3>Camera Control</h3>
+      <p><strong>Pl&uuml;cker coordinates</strong> encode each ray as (o &times; d, d) &isin; R<sup>6</sup>. A Camera Encoder processes these into features injected via pixel-wise addition into temporal attention layers. <em>CameraCtrl</em> trains on RealEstate10K (~65K clips).</p>
+    </div>
+    <div class="card">
+      <h3>Video Extension &amp; Interpolation</h3>
+      <p>Auto-regressive chunk generation for longer videos. <em>FIFO-Diffusion</em> uses a queue-based mechanism for infinite-length generation. <em>Open-Sora</em> masks first-K-frames for continuation, first+last frames for interpolation.</p>
+    </div>
+    <div class="card">
+      <h3>Subject-Driven Generation</h3>
+      <p>Inject a reference identity via cross-attention adapters (IP-Adapter style). <em>DreamVideo</em> decouples subject learning from motion learning. Movie Gen adds personalization via post-training on human-centric videos with image reference conditioning.</p>
+    </div>
+    <div class="card">
+      <h3>Video Inpainting / Outpainting</h3>
+      <p>Extend or fill missing regions in spacetime. <em>AVID</em> uses Temporal MultiDiffusion for arbitrary-length inpainting. <em>Open-Sora Plan</em> treats I2V itself as &ldquo;inpainting in the temporal dimension.&rdquo;</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: DATA PIPELINE ===================== -->
+<section id="data" class="page">
+  <h1>Data Pipeline</h1>
+  <p class="section-intro">Data is the most underappreciated component of video generation. Frontier models consume billions of images and hundreds of millions of video clips, each passing through a multi-stage curation pipeline.</p>
+
+  <h2>Data Scale</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Model</th><th>Video Clips</th><th>Images</th><th>Total Hours</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Movie Gen</strong></td><td>O(100M)</td><td>O(1B)</td><td>O(1M) hrs</td></tr>
+        <tr><td><strong>HunyuanVideo</strong></td><td>hundreds of millions</td><td>billions</td><td>250K hrs (V2A)</td></tr>
+        <tr><td><strong>Wan 2.1</strong></td><td>billions</td><td>billions</td><td>&mdash;</td></tr>
+        <tr><td><strong>Cosmos</strong></td><td>~100M clips</td><td>&mdash;</td><td>20M hrs raw</td></tr>
+        <tr><td><strong>CogVideoX</strong></td><td>~35M</td><td>2B+ filtered</td><td>&mdash;</td></tr>
+        <tr><td><strong>Open-Sora 2.0</strong></td><td>70M &rarr; 10M &rarr; 5M</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td><strong>Seaweed-7B</strong></td><td>O(100M)</td><td>&mdash;</td><td>500K+ hrs/day</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <div class="callout-icon">&#128200;</div>
+    <div class="callout-body">
+      <h4>Quality &gt; Quantity at Later Stages</h4>
+      <p>Every frontier model progressively shrinks its dataset with stricter filtering at each stage. Open-Sora 2.0 goes from 70M to 10M to 5M clips. HunyuanVideo removes 50&ndash;80% per stage. Open-Sora Plan retains only 27% of Panda-70M after cleaning. <strong>The final quality SFT stage typically uses &lt;1M hand-curated clips.</strong></p>
+    </div>
+  </div>
+
+  <h2>Curation Pipeline</h2>
+  <p>All frontier models follow a remarkably similar multi-stage filtering funnel:</p>
+
+  <!-- SVG: data pipeline funnel -->
+  <div class="diagram-card">
+    <div class="diagram-title">Multi-Stage Data Curation Funnel</div>
+    <div style="display:flex;justify-content:center;overflow-x:auto;padding:1rem 0;">
+      <svg viewBox="0 0 640 420" width="640" height="420" style="max-width:100%;height:auto;">
+        <!-- Funnel stages -->
+        <rect x="120" y="10" width="400" height="48" rx="8" fill="rgba(59,130,246,0.06)" stroke="rgba(59,130,246,0.3)" stroke-width="1.5"/>
+        <text x="320" y="30" text-anchor="middle" fill="var(--blue)" font-size="12" font-weight="600">A. Structural Filtering</text>
+        <text x="320" y="47" text-anchor="middle" fill="var(--fg-muted)" font-size="10">Duration 2-60s | Resolution &ge;720px | FPS &ge;16 | Codec H.264</text>
+
+        <text x="320" y="72" text-anchor="middle" fill="var(--muted)" font-size="11">&darr;</text>
+
+        <rect x="145" y="80" width="350" height="48" rx="8" fill="rgba(139,92,246,0.06)" stroke="rgba(139,92,246,0.3)" stroke-width="1.5"/>
+        <text x="320" y="100" text-anchor="middle" fill="var(--violet)" font-size="12" font-weight="600">B. Visual Quality</text>
+        <text x="320" y="117" text-anchor="middle" fill="var(--fg-muted)" font-size="10">Aesthetic score &gt;4.5 | Blur detection | Exposure | VMAF</text>
+
+        <text x="320" y="142" text-anchor="middle" fill="var(--muted)" font-size="11">&darr;</text>
+
+        <rect x="170" y="150" width="300" height="48" rx="8" fill="rgba(16,185,129,0.06)" stroke="rgba(16,185,129,0.3)" stroke-width="1.5"/>
+        <text x="320" y="170" text-anchor="middle" fill="var(--emerald)" font-size="12" font-weight="600">C. Motion Quality</text>
+        <text x="320" y="187" text-anchor="middle" fill="var(--fg-muted)" font-size="10">Optical flow | Camera shake | Static removal | Jitter</text>
+
+        <text x="320" y="212" text-anchor="middle" fill="var(--muted)" font-size="11">&darr;</text>
+
+        <rect x="195" y="220" width="250" height="48" rx="8" fill="rgba(245,158,11,0.06)" stroke="rgba(245,158,11,0.3)" stroke-width="1.5"/>
+        <text x="320" y="240" text-anchor="middle" fill="var(--amber)" font-size="12" font-weight="600">D. Content Filtering</text>
+        <text x="320" y="257" text-anchor="middle" fill="var(--fg-muted)" font-size="10">OCR text overlay | Watermark | NSFW | Logo</text>
+
+        <text x="320" y="282" text-anchor="middle" fill="var(--muted)" font-size="11">&darr;</text>
+
+        <rect x="220" y="290" width="200" height="48" rx="8" fill="rgba(239,68,68,0.06)" stroke="rgba(239,68,68,0.3)" stroke-width="1.5"/>
+        <text x="320" y="310" text-anchor="middle" fill="var(--red)" font-size="12" font-weight="600">E. Scene Split + Dedup</text>
+        <text x="320" y="327" text-anchor="middle" fill="var(--fg-muted)" font-size="10">PySceneDetect | CLIP clustering | SemDeDup</text>
+
+        <text x="320" y="352" text-anchor="middle" fill="var(--muted)" font-size="11">&darr;</text>
+
+        <rect x="245" y="360" width="150" height="48" rx="8" fill="rgba(16,185,129,0.1)" stroke="rgba(16,185,129,0.5)" stroke-width="2"/>
+        <text x="320" y="380" text-anchor="middle" fill="var(--emerald)" font-size="12" font-weight="700">F. Captioning</text>
+        <text x="320" y="397" text-anchor="middle" fill="var(--fg-muted)" font-size="10">VLM dense captions</text>
+
+        <!-- Retention labels on right -->
+        <text x="540" y="38" fill="var(--fg-muted)" font-size="10" font-style="italic">~80% retained</text>
+        <text x="515" y="108" fill="var(--fg-muted)" font-size="10" font-style="italic">~60% retained</text>
+        <text x="490" y="178" fill="var(--fg-muted)" font-size="10" font-style="italic">~45% retained</text>
+        <text x="465" y="248" fill="var(--fg-muted)" font-size="10" font-style="italic">~35% retained</text>
+        <text x="440" y="318" fill="var(--fg-muted)" font-size="10" font-style="italic">~25% retained</text>
+      </svg>
+    </div>
+  </div>
+
+  <h2>Captioning: The Critical Differentiator</h2>
+  <p>The quality of text-video alignment correlates directly with caption quality. Modern models use large VLMs (13B&ndash;72B parameters) to produce <strong>structured, multi-level captions</strong>.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Model</th><th>Captioner</th><th>Caption Style</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Movie Gen</strong></td><td>LLaMA3-Video (8B + 70B)</td><td>70% from 8B, 30% from 70B for cost balance</td></tr>
+        <tr><td><strong>HunyuanVideo</strong></td><td>Custom VLM</td><td>Structured JSON: description, background, style, shot type, lighting, atmosphere, camera</td></tr>
+        <tr><td><strong>CogVideoX</strong></td><td>CogVLM2-Caption</td><td>Hierarchical: Panda-70M short &rarr; CogVLM dense &rarr; GPT-4 distill &rarr; fine-tuned end-to-end</td></tr>
+        <tr><td><strong>Open-Sora 2.0</strong></td><td>LLaVA-Video + Qwen 2.5 Max</td><td>6 aspects: subjects, actions, background, lighting, camera, style</td></tr>
+        <tr><td><strong>Cosmos</strong></td><td>Fine-tuned VILA (13B)</td><td>Avg 97 words/caption on 8 sampled frames, FP8 quantized for 10&times; speed</td></tr>
+        <tr><td><strong>Seaweed-7B</strong></td><td>72B teacher &rarr; 7B student</td><td>Dual: &ldquo;short&rdquo; (action-centric) + &ldquo;detailed&rdquo; (visual)</td></tr>
+        <tr><td><strong>Sora</strong></td><td>Custom (DALL-E 3 technique)</td><td>Highly descriptive; GPT expands short prompts at inference</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="intuition-box">
+    <h3>&#128161; The Captioning Recipe</h3>
+    <p>The emerging best practice: (1) Use a large VLM (70B+) on a random subset for <strong>high-quality reference captions</strong>, (2) distill into a smaller model (7&ndash;13B) that can process the full dataset at scale, (3) produce both <strong>short</strong> (action-centric) and <strong>detailed</strong> (visual-descriptive) captions for each clip, (4) include <strong>structured dimensions</strong> like camera motion, lighting, and style. At inference, short user prompts are expanded to match the detailed training distribution.</p>
+  </div>
+
+  <h2>Specific Filtering Techniques</h2>
+  <div class="step-cards">
+    <div class="step-card">
+      <div class="step-num" style="background:var(--blue)">A</div>
+      <div class="step-body">
+        <h3>Aesthetic Scoring</h3>
+        <p>A CLIP+MLP predictor trained on human aesthetic ratings. LAION-5B aesthetic classifier is widely used. Typical threshold: score &gt;4.5 (retains ~49% of data). Dover model used by HunyuanVideo combines technical + aesthetic quality in a single score.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num" style="background:var(--violet)">B</div>
+      <div class="step-body">
+        <h3>Motion Filtering</h3>
+        <p>Optical flow estimation to compute per-frame motion magnitude. Remove videos that are <strong>too static</strong> (slideshows, still images with music) or <strong>too jittery</strong> (handheld shake, fast random cuts). Open-Sora Plan uses 0.001 &le; motion score &le; 0.3. VMAF (Video Multi-method Assessment Fusion) scores used by Movie Gen and Open-Sora 2.0.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num" style="background:var(--emerald)">C</div>
+      <div class="step-body">
+        <h3>Scene Detection &amp; Splitting</h3>
+        <p>Raw videos are split into single-shot clips using scene boundary detection. <strong>PySceneDetect</strong> (HunyuanVideo), <strong>TransNetV2</strong> neural network (Cosmos), or HSV histogram similarity (Seaweed). This ensures each training clip is temporally coherent with no hard cuts.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num" style="background:var(--amber)">D</div>
+      <div class="step-body">
+        <h3>Deduplication</h3>
+        <p><strong>Semantic deduplication</strong> (SemDeDup): compute CLIP embeddings, k-means cluster into 10K+ groups, remove near-duplicates within each cluster (~30% reduction). Movie Gen additionally uses <em>inverse square root resampling</em> by concept cluster to balance the distribution.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: TRAINING ===================== -->
+<section id="training" class="page">
+  <h1>Training at Scale</h1>
+  <p class="section-intro">Training a frontier video generation model requires billions of parameters, thousands of GPUs, and carefully orchestrated multi-stage curricula. The universal recipe: start with images, progressively add video, increase resolution, and finish with quality fine-tuning.</p>
+
+  <h2>The Universal Training Recipe</h2>
+  <div class="diagram-card">
+    <div class="diagram-title">Progressive Multi-Stage Training Pipeline</div>
+    <div class="training-stages">
+      <div class="train-stage" data-color="blue">
+        <div class="stage-header">Stage 1: Image Pretraining</div>
+        <div class="stage-body">
+          <p>Train the full DiT on large text-image datasets. Builds foundational <strong>spatial understanding</strong>, text-image alignment, and compositional ability. This is the longest and cheapest stage per sample.</p>
+          <div class="stage-spec">Resolution: 256&ndash;512px | Data: O(1B) images | Objective: Flow matching / DDPM</div>
+        </div>
+      </div>
+      <div class="train-arrow">&darr;</div>
+      <div class="train-stage" data-color="violet">
+        <div class="stage-header">Stage 2: Low-Res Joint Image+Video</div>
+        <div class="stage-body">
+          <p>The model learns <strong>temporal dynamics</strong>, motion, and basic physics. Images mixed in to prevent catastrophic forgetting (typical image:video ratio 1:3 to 1:10). Uses the bulk of training compute (25&ndash;60% of total steps).</p>
+          <div class="stage-spec">Resolution: 256&ndash;360px | FPS: 4&ndash;16 | Duration: 2&ndash;8s | Data: O(100M) clips + images</div>
+        </div>
+      </div>
+      <div class="train-arrow">&darr;</div>
+      <div class="train-stage" data-color="emerald">
+        <div class="stage-header">Stage 3: High-Res Video</div>
+        <div class="stage-body">
+          <p>Smaller dataset with <strong>much stricter quality filtering</strong>. Learns high-frequency visual details, fine motion, and longer temporal coherence. Movie Gen requires 60%+ human content at this stage.</p>
+          <div class="stage-spec">Resolution: 480&ndash;720p+ | FPS: 16&ndash;24 | Duration: 5&ndash;16s | Data: O(5&ndash;10M) clips</div>
+        </div>
+      </div>
+      <div class="train-arrow">&darr;</div>
+      <div class="train-stage" data-color="amber">
+        <div class="stage-header">Stage 4: Quality SFT + RL Alignment</div>
+        <div class="stage-body">
+          <p>Very small dataset, often with <strong>human annotation or manual curation</strong>. SFT on premium examples, then optionally GRPO/DPO with video reward models. Seaweed-7B: SFT on 700K clips then DPO with &beta;=100.</p>
+          <div class="stage-spec">Data: 700K&ndash;1M curated | Method: SFT &rarr; DPO/GRPO | Reward: VideoReward, VisionReward</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Model-Specific Training Stages</h2>
+  <div class="table-wrap">
+    <table class="model-table">
+      <thead>
+        <tr><th>Model</th><th>Stages</th><th>Details</th><th>Compute</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Movie Gen</strong> (30B)</td>
+          <td>3+1</td>
+          <td>256px T2I &rarr; 256px joint T2I/V (1:10 ratio) &rarr; 768px joint &rarr; quality SFT. 210K + 195K + 74.5K iterations</td>
+          <td>6,144 H100 GPUs</td>
+        </tr>
+        <tr>
+          <td><strong>HunyuanVideo</strong> (13B)</td>
+          <td>5+1</td>
+          <td>256px img &rarr; 256+512px img &rarr; 256px vid &rarr; 360p vid &rarr; 540&ndash;720p vid &rarr; 960px SFT (~1M annotated)</td>
+          <td>5D parallelism, 99.5% stability</td>
+        </tr>
+        <tr>
+          <td><strong>Wan 2.1</strong> (14B)</td>
+          <td>4</td>
+          <td>256px img &rarr; 192px vid + 256px img &rarr; 480px joint &rarr; 720px joint</td>
+          <td>Batch 1,536 global</td>
+        </tr>
+        <tr>
+          <td><strong>CogVideoX</strong> (5B)</td>
+          <td>3</td>
+          <td>360&times;640 @ 4fps &rarr; 720&times;480 @ 8fps &rarr; 768&times;1360 @ 16fps (20% cleanest data)</td>
+          <td>&mdash;</td>
+        </tr>
+        <tr>
+          <td><strong>Open-Sora 2.0</strong> (11B)</td>
+          <td>3</td>
+          <td>256px/33f (70M) &rarr; 256px/129f (10M) &rarr; 768px/129f (5M)</td>
+          <td>224 GPUs, <strong>total $200K</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Seaweed-7B</strong></td>
+          <td>4+2</td>
+          <td>256px img &rarr; 256px vid &rarr; 480p vid &rarr; 720p vid &rarr; SFT (700K) &rarr; DPO</td>
+          <td>665K H100 hrs, 1K GPUs</td>
+        </tr>
+        <tr>
+          <td><strong>Cosmos</strong> (14B)</td>
+          <td>2</td>
+          <td>Text2World pretrain &rarr; Video2World fine-tune (action/camera conditioned)</td>
+          <td>10,000 H100s, ~3 months</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Training Objectives</h2>
+  <p>The loss function that the DiT minimizes during training. The field has converged on two main families:</p>
+
+  <div class="two-col">
+    <div class="card card-accent" data-color="emerald">
+      <h3>Flow Matching (dominant)</h3>
+      <p>The model predicts a <strong>velocity field</strong> v<sub>&theta;</sub> along straight-line interpolation paths from noise to data:</p>
+      <div class="math-block" data-math="z_t = (1-t)\,x_0 + t\,\epsilon, \quad v_t = \epsilon - x_0"></div>
+      <div class="math-block" data-math="\mathcal{L}_{\text{FM}} = \mathbb{E}_{t,\,x_0,\,\epsilon}\!\left[\|v_\theta(z_t, t) - (\epsilon - x_0)\|^2\right]"></div>
+      <p>Straight paths enable 10&ndash;100&times; fewer sampling steps. &ldquo;Naturally ensures zero terminal SNR.&rdquo;</p>
+      <p class="card-tag">Movie Gen, Wan 2.1, HunyuanVideo, Open-Sora 2.0, SD3, FLUX</p>
+    </div>
+    <div class="card card-accent" data-color="blue">
+      <h3>DDPM with v-prediction</h3>
+      <p>The model predicts v = &alpha;<sub>t</sub>&epsilon; &minus; &sigma;<sub>t</sub>x<sub>0</sub>, which balances epsilon-prediction (good at low noise) and x-prediction (good at high noise):</p>
+      <div class="math-block" data-math="\mathcal{L}_v = \mathbb{E}_{t,\,x_0,\,\epsilon}\!\left[\|v_\theta(x_t, t) - (\alpha_t\epsilon - \sigma_t x_0)\|^2\right]"></div>
+      <p>Avoids color shift problems of pure &epsilon;-prediction. Combined with zero terminal SNR schedule.</p>
+      <p class="card-tag">CogVideoX, Open-Sora Plan, SVD</p>
+    </div>
+  </div>
+
+  <h2>Timestep Sampling</h2>
+  <p>How t is sampled during training significantly affects convergence. Uniform sampling wastes compute on trivial noise levels.</p>
+
+  <div class="two-col">
+    <div class="card">
+      <h3>Logit-Normal (SD3/FLUX)</h3>
+      <p>Draw t from a logit-normal distribution with parameters (m=0, s=1). This concentrates training on <strong>intermediate timesteps</strong> where the model refines perceptually meaningful details. Consistently outperforms uniform sampling.</p>
+      <p>Used by: Movie Gen, HunyuanVideo, Open-Sora, SD3, FLUX</p>
+    </div>
+    <div class="card">
+      <h3>Min-SNR Weighting</h3>
+      <p>Weight the loss by w<sub>t</sub> = min(SNR(t), &gamma;) with &gamma;=5. Achieves <strong>3.4&times; faster convergence</strong> than unweighted (ICCV 2023). Treats diffusion training as multi-task learning, balancing conflicts among timesteps.</p>
+      <p>Used by: Open-Sora Plan (&gamma;=5.0)</p>
+    </div>
+  </div>
+
+  <h2>Classifier-Free Guidance (CFG)</h2>
+  <p>During training, text conditioning is randomly dropped (replaced with null embedding) at 10&ndash;20% probability. At inference, conditional and unconditional predictions are combined:</p>
+  <div class="math-block" data-math="\hat{\epsilon} = \epsilon_\text{uncond} + s \cdot (\epsilon_\text{cond} - \epsilon_\text{uncond})"></div>
+  <p>Guidance scale s typically 5&ndash;15 at inference. SD3 uses a 46.3% per-encoder dropout for flexible multi-encoder ablation. <em>CFG-Zero*</em> (2025) addresses early-trajectory instability by zeroing out the first few ODE solver steps.</p>
+
+  <h2>Infrastructure &amp; Parallelism</h2>
+  <div class="two-col">
+    <div class="card">
+      <h3>Compute Scale</h3>
+      <ul>
+        <li><strong>Movie Gen (30B):</strong> 6,144 H100 GPUs, 3D parallelism (FSDP + tensor + sequence + context)</li>
+        <li><strong>HunyuanVideo (13B):</strong> 5D parallelism (tensor + sequence + context + data + ZeroCache)</li>
+        <li><strong>Cosmos (14B):</strong> 10,000 H100s for ~3 months (~22M GPU-hours)</li>
+        <li><strong>Seaweed-7B:</strong> 1,000 H100s for 665K GPU-hours</li>
+        <li><strong>Open-Sora 2.0 (11B):</strong> 224 GPUs, total cost <strong>$200K</strong></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Memory Optimization</h3>
+      <ul>
+        <li><strong>Activation Checkpointing:</strong> Save only critical activations, recompute during backward. ~12% savings.</li>
+        <li><strong>Mixed Precision:</strong> BF16 forward/backward, FP32 master weights. Halves activation memory.</li>
+        <li><strong>Gradient Accumulation:</strong> Simulate larger batches without proportional memory cost.</li>
+        <li><strong>Sequence Parallelism:</strong> Split 73K+ token video sequences across devices.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-icon">&#128176;</div>
+    <div class="callout-body">
+      <h4>Cost Perspective</h4>
+      <p>Open-Sora 2.0 demonstrated that a competitive 11B video model can be trained for <strong>$200K total</strong>, achieving performance within 0.69% of Sora. This is 10&ndash;100&times; cheaper than frontier lab budgets, suggesting the gap between open and closed models will continue to narrow.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: MODELS ===================== -->
+<section id="models" class="page">
+  <h1>Frontier Models (2024&ndash;2025)</h1>
+  <p class="section-intro">A detailed comparison of the state-of-the-art video generation models, their architectures, and key innovations.</p>
+
+  <h2>Model Comparison</h2>
+  <div class="table-wrap model-table">
+    <table>
+      <thead>
+        <tr><th>Model</th><th>Org</th><th>Params</th><th>Objective</th><th>VAE</th><th>Text Encoder</th><th>Open</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Veo 3</strong></td><td>Google</td><td>~49B</td><td>Joint A/V diffusion</td><td>Dual (video+audio)</td><td>Gemini-based</td><td class="no">No</td>
+        </tr>
+        <tr>
+          <td><strong>Movie Gen</strong></td><td>Meta</td><td>30B</td><td>Flow Matching</td><td>8&times;8&times;8, C=16</td><td>UL2+ByT5+MetaCLIP</td><td class="no">No</td>
+        </tr>
+        <tr>
+          <td><strong>Wan 2.1</strong></td><td>Alibaba</td><td>1.3B/14B</td><td>Flow Matching</td><td>4&times;8&times;8, C=16</td><td>umT5</td><td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td><strong>HunyuanVideo</strong></td><td>Tencent</td><td>13B+</td><td>Flow Matching</td><td>4&times;8&times;8, C=16</td><td>MLLM+CLIP</td><td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td><strong>Goku</strong></td><td>ByteDance</td><td>2B/8B</td><td>Rectified Flow</td><td>8&times;8&times;4, C=16</td><td>Flan-T5</td><td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td><strong>CogVideoX</strong></td><td>Zhipu AI</td><td>2B/5B</td><td>DDPM v-pred</td><td>4&times;8&times;8, C=16</td><td>T5-v1.1-XXL</td><td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td><strong>Sora</strong></td><td>OpenAI</td><td>~11B+</td><td>Diffusion</td><td>Spatiotemporal</td><td>Recaptioner</td><td class="no">No</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Key Innovations by Model</h2>
+
+  <div class="model-cards">
+    <div class="model-card" data-color="amber">
+      <h3>Veo 3 <span class="model-badge">Google, May 2025</span></h3>
+      <p>First model with <strong>joint audio-visual generation</strong>. Audio and video are denoised together in a unified diffusion process, producing synchronized dialogue, ambient sound, and SFX natively. Hierarchical: 12B transformer for keyframes, 28B U-Net for frame interpolation. Up to 4K resolution, 1+ minute videos.</p>
+    </div>
+    <div class="model-card" data-color="blue">
+      <h3>Movie Gen <span class="model-badge">Meta, Oct 2024</span></h3>
+      <p><strong>LLaMA-3 backbone for generation</strong>. Demonstrates that decoder-only LLM architectures work as video generation backbones. Triple text encoder (UL2 + MetaCLIP + ByT5) provides reasoning, cross-modal alignment, and character-level text rendering. 30B params, trained on 6,144 H100 GPUs.</p>
+    </div>
+    <div class="model-card" data-color="emerald">
+      <h3>Wan 2.1 <span class="model-badge">Alibaba, Mar 2025</span></h3>
+      <p><strong>#1 on VBench (86.22%)</strong>. Novel Wan-VAE with 256&times; compression and unlimited-length video encoding via causal convolutions. Open-source 14B and 1.3B variants. Supports text-to-video, image-to-video, and video editing from a single architecture.</p>
+    </div>
+    <div class="model-card" data-color="violet">
+      <h3>HunyuanVideo <span class="model-badge">Tencent, Dec 2024</span></h3>
+      <p>First to use a <strong>multimodal LLM as text encoder</strong>. Dual-stream to single-stream architecture: early layers process video and text independently, later layers fuse them. 13B+ params, largest open-source model at release. v1.5 adds Sliding Tile Attention (1.87&times; speedup).</p>
+    </div>
+  </div>
+
+  <h2>Architectural Trends</h2>
+  <div class="trend-list">
+    <div class="trend-item">
+      <span class="trend-label">Flow Matching over DDPM</span>
+      <div class="trend-bar" style="width:90%">90% of 2025 models</div>
+    </div>
+    <div class="trend-item">
+      <span class="trend-label">DiT over U-Net</span>
+      <div class="trend-bar" style="width:95%">95% of new models</div>
+    </div>
+    <div class="trend-item">
+      <span class="trend-label">3D Causal VAE (4&times;8&times;8)</span>
+      <div class="trend-bar" style="width:85%">Standard since 2024</div>
+    </div>
+    <div class="trend-item">
+      <span class="trend-label">10B+ Parameters</span>
+      <div class="trend-bar" style="width:70%">Frontier scale</div>
+    </div>
+    <div class="trend-item">
+      <span class="trend-label">RL Alignment Stage</span>
+      <div class="trend-bar" style="width:60%">Growing adoption</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: ALIGNMENT ===================== -->
+<section id="alignment" class="page">
+  <h1>RL &amp; Alignment</h1>
+  <p class="section-intro">After pre-training, video models are aligned with human preferences using reinforcement learning. This section covers the latest techniques: GRPO, DPO, reward models, and their adaptation to flow matching.</p>
+
+  <h2>Why Alignment?</h2>
+  <p>Pre-trained video models often produce outputs with artifacts, poor text adherence, or unnatural motion. RL alignment fine-tunes the model to match human preferences across multiple dimensions: visual quality, motion quality, and text faithfulness.</p>
+
+  <h2>Alignment Methods Compared</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Reward Model</th><th>Pairwise Data</th><th>Online</th><th>Memory</th><th>Stability</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>PPO / RLHF</td><td class="yes">Yes</td><td class="no">No (scalar)</td><td class="yes">Yes</td><td>Very High (4 models)</td><td>Low</td></tr>
+        <tr><td>DPO</td><td class="no">No</td><td class="yes">Yes</td><td class="no">No (offline)</td><td>Moderate</td><td>High</td></tr>
+        <tr><td>Online DPO/VPO</td><td>Implicit</td><td>Generated</td><td class="yes">Yes</td><td>Moderate</td><td>Medium</td></tr>
+        <tr><td><strong>GRPO</strong></td><td class="yes">Yes (scoring)</td><td class="no">No (ranking)</td><td class="yes">Yes</td><td>Moderate</td><td><strong>High</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>GRPO for Video</h2>
+  <div class="intuition-box">
+    <h3>&#128161; From LLMs to Video: How GRPO Adapts</h3>
+    <p>You know GRPO from LLMs: generate a group of responses, rank them by reward, update the policy using relative rankings (no critic needed). For video, the same principle applies but with a key challenge: <strong>flow matching models use deterministic ODE paths</strong>, so there's no natural exploration mechanism.</p>
+    <p>The solution: <strong>convert the ODE to an SDE</strong> by adding controlled noise during sampling. This enables the diversity needed for group-relative ranking while keeping the benefits of flow matching.</p>
+  </div>
+
+  <div class="two-col">
+    <div class="card card-accent" data-color="emerald">
+      <h3>DanceGRPO (ByteDance, 2025)</h3>
+      <p>First unified GRPO framework working across both diffusion and rectified flow models, across T2I, T2V, and I2V tasks. Converts ODE to SDE for divergent sampling. Up to <strong>181% improvement</strong> on HPS-v2.1.</p>
+    </div>
+    <div class="card card-accent" data-color="violet">
+      <h3>MixGRPO (Tencent, 2025)</h3>
+      <p>Sliding window approach: SDE sampling only within a window, ODE outside. Reduces training time by <strong>~50%</strong> vs DanceGRPO. MixGRPO-Flash reduces by <strong>71%</strong>. Used in HunyuanVideo 1.5 production.</p>
+    </div>
+  </div>
+
+  <div class="advanced-math">
+    <h3>Flow-GRPO Objective</h3>
+    <p>For a flow matching model with policy &pi;<sub>&theta;</sub>, given a prompt p and a group of K generated videos {v<sub>1</sub>, ..., v<sub>K</sub>} with rewards {r<sub>1</sub>, ..., r<sub>K</sub>}:</p>
+    <div class="math-block" data-math="\mathcal{L}_{\text{GRPO}} = -\mathbb{E}_{p, \{v_i\}} \left[ \sum_{i=1}^{K} \hat{A}_i \cdot \log \pi_\theta(v_i | p) - \beta \cdot D_{\text{KL}}(\pi_\theta \| \pi_{\text{ref}}) \right]"></div>
+    <p>where the advantage &Acirc;<sub>i</sub> is computed from group-relative ranking:</p>
+    <div class="math-block" data-math="\hat{A}_i = \frac{r_i - \text{mean}(\{r_j\})}{\text{std}(\{r_j\})}"></div>
+    <p>The key adaptation for flow matching: during generation, inject noise to convert the ODE into an SDE, enabling diverse outputs within each group.</p>
+  </div>
+
+  <h2>Video Reward Models</h2>
+  <div class="three-col">
+    <div class="card">
+      <h3>VideoReward</h3>
+      <p>3 dimensions: Visual Quality, Motion Quality, Text Alignment. 182K annotated triplets from 12 T2V models.</p>
+      <p class="card-tag">NeurIPS 2025, Kling Team</p>
+    </div>
+    <div class="card">
+      <h3>MJ-VIDEO</h3>
+      <p>MoE architecture: 5 expert modules (Alignment, Safety, Fineness, Coherence, Bias) with 28 fine-grained criteria.</p>
+      <p class="card-tag">NeurIPS 2025 Spotlight</p>
+    </div>
+    <div class="card">
+      <h3>VisionReward</h3>
+      <p>Hierarchical: 9 dimensions for T2V. Decomposes preferences into judgment questions. +17.2% over VideoScore.</p>
+      <p class="card-tag">AAAI 2026</p>
+    </div>
+  </div>
+
+  <h2>DPO for Video</h2>
+  <div class="step-cards">
+    <div class="step-card" data-step="1">
+      <div class="step-num" style="background:var(--violet)">1</div>
+      <div class="step-body">
+        <h3>VideoDPO (CVPR 2025)</h3>
+        <p>Pioneers DPO for video diffusion. Introduces "OmniScore" covering visual quality AND semantic alignment. Constructs preference pairs comprehensively. First end-to-end application of preference optimization to video.</p>
+      </div>
+    </div>
+    <div class="step-card" data-step="2">
+      <div class="step-num" style="background:var(--violet)">2</div>
+      <div class="step-body">
+        <h3>Flow-DPO (NeurIPS 2025)</h3>
+        <p>Adapts DPO specifically to rectified flow models. Uses group-based preference construction: highest-reward = chosen, lowest = rejected within each group. Part of the VideoAlign pipeline.</p>
+      </div>
+    </div>
+    <div class="step-card" data-step="3">
+      <div class="step-num" style="background:var(--violet)">3</div>
+      <div class="step-body">
+        <h3>HALO / Gran-DPO (2025)</h3>
+        <p>Introduces <strong>patch-level</strong> DPO: operates on video patches rather than whole frames. Collaborative optimization of local (patch) and global (video) rewards. Suppresses localized hallucinations.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: FRONTIERS ===================== -->
+<section id="frontiers" class="page">
+  <h1>Open Problems &amp; Research Frontiers</h1>
+  <p class="section-intro">Despite rapid progress, video generation faces fundamental challenges. These represent the most important research directions for the next 1-3 years.</p>
+
+  <h2>Current Limitations</h2>
+  <div class="problem-grid">
+    <div class="problem-card" data-severity="high">
+      <h3>&#9888; Physics Simulation</h3>
+      <p>Models don't accurately model physical interactions: glass shattering, fluid dynamics, object permanence. Eating food doesn't change object state. Objects float, interpenetrate, or behave non-physically.</p>
+      <p class="problem-ref">T2VPhysBench (2025), World Consistency Score</p>
+    </div>
+    <div class="problem-card" data-severity="high">
+      <h3>&#9888; Long-Form Consistency</h3>
+      <p>Each generation is typically 4&ndash;8 seconds. Longer videos cause drift in character appearance, scene layout, and style. Autoregressive extension introduces compounding errors.</p>
+    </div>
+    <div class="problem-card" data-severity="medium">
+      <h3>&#9888; Fine Detail Control</h3>
+      <p>Complex facial expressions, fine hand movements, and small text remain challenging. Compositional prompts with multiple entities and relationships often fail.</p>
+    </div>
+    <div class="problem-card" data-severity="medium">
+      <h3>&#9888; Audio-Video Sync</h3>
+      <p>Separately generated audio and video inevitably desynchronize. Veo 3 addresses this with joint generation, but it remains unsolved for most models.</p>
+    </div>
+    <div class="problem-card" data-severity="low">
+      <h3>&#9888; Real-Time Generation</h3>
+      <p>Even optimized inference can't produce high-resolution video in real-time. A 5s 720p video takes hundreds of seconds to generate.</p>
+    </div>
+    <div class="problem-card" data-severity="high">
+      <h3>&#9888; Reward Hacking</h3>
+      <p>RL alignment reward models can be exploited by the optimizer. Videos may score high on automated metrics while looking worse to humans. Multi-dimensional, robust reward models are needed.</p>
+    </div>
+  </div>
+
+  <h2>Research Frontiers</h2>
+  <div class="frontier-list">
+    <div class="frontier-item">
+      <h3>Unified RL Frameworks</h3>
+      <p>DanceGRPO and MixGRPO demonstrate single algorithms working across diffusion and flow matching, across T2I/T2V/I2V. Expect further unification and 10&times; efficiency gains.</p>
+    </div>
+    <div class="frontier-item">
+      <h3>Physics-Grounded Generation</h3>
+      <p>World Consistency Score and T2VPhysBench represent early steps. Future models may incorporate learned physics priors or physical simulation engines as reward signals.</p>
+    </div>
+    <div class="frontier-item">
+      <h3>Constitutional Video Generation</h3>
+      <p>No equivalent to Constitutional AI exists for video. "Temporal risk" &mdash; where individual frames are harmless but sequences are unsafe &mdash; is a unique video challenge requiring novel safety approaches.</p>
+    </div>
+    <div class="frontier-item">
+      <h3>World Models</h3>
+      <p>As video models evolve toward world simulators (Sora's vision), they must learn physical consistency, causal reasoning, and factual accuracy &mdash; not just visual plausibility.</p>
+    </div>
+    <div class="frontier-item">
+      <h3>Efficient Alignment</h3>
+      <p>MixGRPO-Flash (71% training time reduction) and ReinFlow (single-step fine-tuning) show RL alignment needn't be prohibitively expensive. Making alignment practical at video scale is an active frontier.</p>
+    </div>
+    <div class="frontier-item">
+      <h3>Multi-Objective Pareto Alignment</h3>
+      <p>Optimizing quality vs. safety vs. text faithfulness vs. motion simultaneously rather than a single scalar reward. MJ-VIDEO's MoE and VisionReward's MPO are early approaches.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: REFERENCES ===================== -->
+<section id="references" class="page">
+  <h1>References &amp; Further Reading</h1>
+
+  <h2>Foundational Papers</h2>
+  <ul class="ref-list">
+    <li><strong>Flow Matching for Generative Modeling</strong> &mdash; Lipman et al., ICLR 2023. Introduced conditional flow matching.</li>
+    <li><strong>Flow Straight and Fast (Rectified Flow)</strong> &mdash; Liu et al., 2023. Straight-line OT paths.</li>
+    <li><strong>Scalable Diffusion Models with Transformers (DiT)</strong> &mdash; Peebles &amp; Xie, ICCV 2023. The original DiT paper.</li>
+    <li><strong>Auto-Encoding Variational Bayes</strong> &mdash; Kingma &amp; Welling, ICLR 2014. The original VAE.</li>
+    <li><strong>Denoising Diffusion Probabilistic Models</strong> &mdash; Ho et al., NeurIPS 2020. The DDPM paper.</li>
+    <li><strong>High-Resolution Image Synthesis with LDM</strong> &mdash; Rombach et al., CVPR 2022. Latent Diffusion / Stable Diffusion.</li>
+  </ul>
+
+  <h2>Video Generation Models</h2>
+  <ul class="ref-list">
+    <li><strong>Video Generation Models as World Simulators</strong> &mdash; OpenAI, 2024. Sora technical report.</li>
+    <li><strong>Veo 3 Tech Report</strong> &mdash; Google DeepMind, 2025. Joint audio-visual generation.</li>
+    <li><strong>Wan 2.1</strong> &mdash; Alibaba, 2025 (arXiv:2503.20314). Open-source SOTA on VBench.</li>
+    <li><strong>HunyuanVideo</strong> &mdash; Tencent, 2024 (arXiv:2412.03603). Dual-to-single stream DiT.</li>
+    <li><strong>CogVideoX</strong> &mdash; Zhipu AI, 2024 (arXiv:2408.06072). Expert Transformer.</li>
+    <li><strong>Movie Gen</strong> &mdash; Meta, 2024 (arXiv:2410.13720). LLaMA-3 backbone, 30B params.</li>
+    <li><strong>Goku</strong> &mdash; ByteDance, 2025 (arXiv:2502.04896). Rectified Flow Transformer.</li>
+  </ul>
+
+  <h2>DiT Variants &amp; Architecture</h2>
+  <ul class="ref-list">
+    <li><strong>Scaling Rectified Flow Transformers (SD3/MMDiT)</strong> &mdash; Esser et al., 2024.</li>
+    <li><strong>PixArt-Alpha</strong> &mdash; Chen et al., 2024. Efficient DiT with cross-attention.</li>
+    <li><strong>U-ViT: All are Worth Words</strong> &mdash; Bao et al., 2023. U-shaped ViT backbone.</li>
+    <li><strong>FLUX</strong> &mdash; Black Forest Labs, 2024. 12B-32B double-to-single stream.</li>
+    <li><strong>Scaling Laws for DiT</strong> &mdash; Oct 2024 (arXiv:2410.08184).</li>
+  </ul>
+
+  <h2>RL Alignment</h2>
+  <ul class="ref-list">
+    <li><strong>InstructVideo</strong> &mdash; CVPR 2024. Pioneering RLHF for video diffusion.</li>
+    <li><strong>VideoAlign / VideoReward</strong> &mdash; Kling Team, NeurIPS 2025 (arXiv:2501.13918).</li>
+    <li><strong>DanceGRPO</strong> &mdash; ByteDance, 2025 (arXiv:2505.07818). Unified GRPO for diffusion+flow.</li>
+    <li><strong>MixGRPO</strong> &mdash; Tencent, 2025 (arXiv:2507.21802). Efficient GRPO with sliding window.</li>
+    <li><strong>VideoDPO</strong> &mdash; CVPR 2025 (arXiv:2412.14167). DPO for video.</li>
+    <li><strong>Diffusion-DPO</strong> &mdash; CVPR 2024. Foundational DPO for diffusion models.</li>
+    <li><strong>MJ-VIDEO</strong> &mdash; NeurIPS 2025 Spotlight (arXiv:2502.01719). MoE reward model.</li>
+  </ul>
+
+  <h2>Surveys &amp; Tutorials</h2>
+  <ul class="ref-list">
+    <li><strong>Diffusion Models for Video Generation</strong> &mdash; Lilian Weng, 2024 (lilianweng.github.io).</li>
+    <li><strong>Awesome RL for Video Generation</strong> &mdash; GitHub (wendell0218). Curated paper list.</li>
+    <li><strong>Video Generation Models Explosion 2024</strong> &mdash; Yen-Chen Lin (yenchenlin.me).</li>
+    <li><strong>VBench / VBench-2.0</strong> &mdash; Comprehensive video generation benchmarks.</li>
+  </ul>
+</section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
