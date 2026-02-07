@@ -358,6 +358,32 @@ Ratio: ~48&times; fewer values to denoise
   <h2>Why Compress?</h2>
   <p>A single second of 720p video contains ~71 million pixel values. Running diffusion directly in pixel space would require attention over millions of tokens &mdash; computationally impossible. The VAE compresses this by <strong>256&times;</strong> spatially (4&times; temporal, 8&times; in each spatial dimension), making diffusion tractable.</p>
 
+  <h2>From 2D to 3D: The Evolution</h2>
+  <p>Early latent diffusion (Stable Diffusion, SDXL) used a <strong>2D spatial VAE</strong>: each frame is independently encoded into a 2D latent, then the model generates frame-by-frame. This works for images but <em>fails for video</em> &mdash; there is no temporal compression, adjacent frames have no latent-level coherence, and the result is flickering, temporally inconsistent output.</p>
+
+  <div class="two-col">
+    <div class="card card-accent" data-color="blue">
+      <h3>2D Spatial VAE</h3>
+      <p>Compresses each frame independently: H&times;W&times;3 &rarr; H/8&times;W/8&times;4. No temporal awareness. Used in SD 1.x, SDXL, DALL-E.</p>
+      <p><strong>Problem for video:</strong> No temporal compression. Adjacent frames are encoded independently, causing flicker and temporal inconsistency.</p>
+      <p class="card-tag">SD 1.5, SDXL, Imagen</p>
+    </div>
+    <div class="card card-accent" data-color="emerald">
+      <h3>3D Spatiotemporal VAE</h3>
+      <p>Compresses video jointly in space and time: T&times;H&times;W&times;3 &rarr; T/4&times;H/8&times;W/8&times;16. Temporal features are entangled in the latent &mdash; the diffusion model sees a temporally coherent representation.</p>
+      <p><strong>Key models:</strong> <em>MagViT-v2</em> (Google, tokenizes video into discrete codes), <em>Cosmos Tokenizer</em> (NVIDIA, continuous + discrete), <em>Wan-VAE</em> (Alibaba, unlimited-length), <em>CogVideoX VAE</em>.</p>
+      <p class="card-tag">All 2024&ndash;2025 frontier video models</p>
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-icon">&#9888;</div>
+    <div class="callout-body">
+      <h4>Why 2D VAE Fails for Video</h4>
+      <p>If you encode each frame independently with a 2D VAE, the latent codes for adjacent frames have no guaranteed smoothness. The diffusion model must learn temporal coherence <em>entirely on its own</em>, which is extremely difficult. 3D VAEs solve this by <strong>compressing the temporal dimension</strong> (typically 4&times;), so the latent space is already temporally smooth. This is why every serious video model post-2023 uses a 3D VAE.</p>
+    </div>
+  </div>
+
   <h2>Encoder-Decoder Architecture</h2>
   <div class="diagram-card">
     <div class="diagram-title">3D VAE Pipeline &mdash; Concrete Example</div>
@@ -460,6 +486,8 @@ Ratio: ~48&times; fewer values to denoise
         <tr><td>HunyuanVideo</td><td>4&times;8&times;8</td><td>16</td><td class="yes">Yes</td><td>CausalConv3D, shared image/video arch</td></tr>
         <tr><td>Movie Gen (Meta)</td><td>8&times;8&times;8</td><td>16</td><td class="yes">Yes</td><td>TAE with 1D temporal conv + attention</td></tr>
         <tr><td>Cosmos (NVIDIA)</td><td>8&times;16&times;16</td><td>16</td><td class="yes">Yes</td><td>Highest compression; world model focus</td></tr>
+        <tr><td>MagViT-v2 (Google)</td><td>4&times;8&times;8</td><td>18 (discrete)</td><td class="yes">Yes</td><td>LFQ tokenizer; discrete codes; used in VideoPoet</td></tr>
+        <tr><td>SD/SDXL VAE</td><td>&mdash; (2D only)</td><td>4</td><td class="no">N/A</td><td>2D spatial only; no temporal compression</td></tr>
       </tbody>
     </table>
   </div>
@@ -540,6 +568,19 @@ Ratio: ~48&times; fewer values to denoise
     <p>At inference, we solve the ODE from t=0 to t=1 using Euler's method:</p>
     <div class="math-block" data-math="x_{t+\Delta t} = x_t + \Delta t \cdot v_\theta(x_t, t, \text{text})"></div>
     <p>With N steps, &Delta;t = 1/N. Typical production: N = 25&ndash;50.</p>
+  </div>
+
+  <h2>Reflow: Straightening Trajectories Further</h2>
+  <div class="intuition-box">
+    <h3>&#128161; Why Straight Paths Matter</h3>
+    <p>Even with flow matching, the learned velocity field isn't <em>perfectly</em> straight &mdash; the model approximates. <strong>Reflow</strong> (Liu et al., 2023) is a technique to iteratively straighten these paths:</p>
+    <ol>
+      <li>Train a flow matching model normally (pass 1)</li>
+      <li>Use the trained model to generate (noise, data) pairs by flowing noise to data</li>
+      <li>Re-train on these <em>paired</em> samples &mdash; the new coupling is straighter because the pairs are already matched</li>
+      <li>Repeat. Each iteration produces straighter paths.</li>
+    </ol>
+    <p><strong>Result:</strong> After reflowing, you can sample in as few as <strong>1&ndash;4 steps</strong> with minimal quality loss (vs. 25&ndash;50 steps for first-pass models). This is the theoretical foundation behind distillation techniques used in production (e.g., FLUX-Schnell, InstaFlow).</p>
   </div>
 
   <h2>Flow Matching Variants</h2>
@@ -1082,9 +1123,17 @@ Ratio: ~48&times; fewer values to denoise
     </table>
   </div>
 
+  <div class="callout callout-warn">
+    <div class="callout-icon">&#9888;</div>
+    <div class="callout-body">
+      <h4>Dense Captions Are Non-Negotiable</h4>
+      <p>Sora's technical report explicitly credits dense captioning as a key factor in generation quality. Short captions (COCO-style, ~10 words) only describe the main action. Dense captions (~100+ words) describe composition, lighting, camera angle, background, style, and motion &mdash; giving the model far richer conditioning signal. <strong>Models trained on dense captions follow complex prompts dramatically better</strong> and produce more diverse, detailed outputs. This is arguably the single highest-leverage data improvement.</p>
+    </div>
+  </div>
+
   <div class="intuition-box">
     <h3>&#128161; The Captioning Recipe</h3>
-    <p>The emerging best practice: (1) Use a large VLM (70B+) on a random subset for <strong>high-quality reference captions</strong>, (2) distill into a smaller model (7&ndash;13B) that can process the full dataset at scale, (3) produce both <strong>short</strong> (action-centric) and <strong>detailed</strong> (visual-descriptive) captions for each clip, (4) include <strong>structured dimensions</strong> like camera motion, lighting, and style. At inference, short user prompts are expanded to match the detailed training distribution.</p>
+    <p>The emerging best practice: (1) Use a large VLM (70B+) on a random subset for <strong>high-quality reference captions</strong>, (2) distill into a smaller model (7&ndash;13B) that can process the full dataset at scale, (3) produce both <strong>short</strong> (action-centric) and <strong>detailed</strong> (visual-descriptive) captions for each clip, (4) include <strong>structured dimensions</strong> like camera motion, lighting, and style. At inference, short user prompts are expanded to match the detailed training distribution (Sora uses GPT to expand prompts, Movie Gen uses LLaMA).</p>
   </div>
 
   <h2>Specific Filtering Techniques</h2>
@@ -1259,24 +1308,60 @@ Ratio: ~48&times; fewer values to denoise
   <p>Guidance scale s typically 5&ndash;15 at inference. SD3 uses a 46.3% per-encoder dropout for flexible multi-encoder ablation. <em>CFG-Zero*</em> (2025) addresses early-trajectory instability by zeroing out the first few ODE solver steps.</p>
 
   <h2>Infrastructure &amp; Parallelism</h2>
+  <p>Video diffusion models are among the most memory-hungry models in AI. A single 720p, 5-second video produces ~73K tokens after patchification &mdash; far beyond what fits on one GPU. <strong>Distributed training isn't optional, it's a requirement.</strong></p>
+
+  <div class="diagram-card">
+    <div class="diagram-title">Parallelism Strategies for Video DiT Training</div>
+    <div class="step-cards">
+      <div class="step-card">
+        <div class="step-num" style="background:var(--blue)">1</div>
+        <div class="step-body">
+          <h3>FSDP (Fully-Sharded Data Parallel)</h3>
+          <p>Shards model parameters, gradients, and optimizer states across GPUs. Each GPU holds only 1/N of the model. All-gather before forward, reduce-scatter after backward. <strong>Enables 30B+ params to fit in cluster memory.</strong> Used by Movie Gen, Open-Sora 2.0.</p>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="background:var(--violet)">2</div>
+        <div class="step-body">
+          <h3>Sequence / Context Parallelism</h3>
+          <p>The video token sequence (73K+ tokens) is split across GPUs along the sequence dimension. Each GPU processes a chunk, with ring-allreduce for cross-chunk attention. <strong>Critical for video: image models don't need this, video models can't work without it.</strong> HunyuanVideo uses this as part of its 5D parallelism.</p>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="background:var(--emerald)">3</div>
+        <div class="step-body">
+          <h3>Tensor Parallelism</h3>
+          <p>Splits individual weight matrices across GPUs (e.g., each GPU handles a slice of the attention heads). Low communication overhead for intra-node (NVLink). Combined with FSDP for inter-node. Movie Gen uses 3D parallelism: FSDP + tensor + sequence.</p>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="background:var(--amber)">4</div>
+        <div class="step-body">
+          <h3>Pipeline Parallelism</h3>
+          <p>Splits model <em>layers</em> across GPUs (stage 1 on GPU-0, stage 2 on GPU-1, etc.). Micro-batching hides the pipeline bubble. Less common for video DiTs but used in the largest deployments. HunyuanVideo's &ldquo;5D parallelism&rdquo; = data + tensor + sequence + context + ZeroCache.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="two-col">
     <div class="card">
       <h3>Compute Scale</h3>
       <ul>
-        <li><strong>Movie Gen (30B):</strong> 6,144 H100 GPUs, 3D parallelism (FSDP + tensor + sequence + context)</li>
-        <li><strong>HunyuanVideo (13B):</strong> 5D parallelism (tensor + sequence + context + data + ZeroCache)</li>
+        <li><strong>Movie Gen (30B):</strong> 6,144 H100 GPUs (Meta Grand Teton platform)</li>
         <li><strong>Cosmos (14B):</strong> 10,000 H100s for ~3 months (~22M GPU-hours)</li>
-        <li><strong>Seaweed-7B:</strong> 1,000 H100s for 665K GPU-hours</li>
-        <li><strong>Open-Sora 2.0 (11B):</strong> 224 GPUs, total cost <strong>$200K</strong></li>
+        <li><strong>HunyuanVideo (13B):</strong> 5D parallelism, 99.5% training stability</li>
+        <li><strong>Seaweed-7B:</strong> 1,000 H100s, 665K GPU-hours total</li>
+        <li><strong>Open-Sora 2.0 (11B):</strong> 224 GPUs, <strong>$200K total</strong></li>
       </ul>
     </div>
     <div class="card">
       <h3>Memory Optimization</h3>
       <ul>
-        <li><strong>Activation Checkpointing:</strong> Save only critical activations, recompute during backward. ~12% savings.</li>
-        <li><strong>Mixed Precision:</strong> BF16 forward/backward, FP32 master weights. Halves activation memory.</li>
+        <li><strong>Activation Checkpointing:</strong> Save only critical activations, recompute during backward pass. ~12% memory savings.</li>
+        <li><strong>Mixed Precision (BF16):</strong> BF16 forward/backward, FP32 master weights. Halves activation memory.</li>
         <li><strong>Gradient Accumulation:</strong> Simulate larger batches without proportional memory cost.</li>
-        <li><strong>Sequence Parallelism:</strong> Split 73K+ token video sequences across devices.</li>
+        <li><strong>Flash Attention:</strong> Fused kernels for O(N) memory attention. Essential for 73K+ token sequences.</li>
       </ul>
     </div>
   </div>
@@ -1345,6 +1430,31 @@ Ratio: ~48&times; fewer values to denoise
     <div class="model-card" data-color="violet">
       <h3>HunyuanVideo <span class="model-badge">Tencent, Dec 2024</span></h3>
       <p>First to use a <strong>multimodal LLM as text encoder</strong>. Dual-stream to single-stream architecture: early layers process video and text independently, later layers fuse them. 13B+ params, largest open-source model at release. v1.5 adds Sliding Tile Attention (1.87&times; speedup).</p>
+    </div>
+  </div>
+
+  <h2>Architecture Philosophies: East vs West</h2>
+  <p>Frontier models split into distinct design philosophies. Understanding these differences is key to navigating the landscape:</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Dimension</th><th>Sora (OpenAI)</th><th>Veo 3 (Google)</th><th>Wan 2.1 / Kling (China)</th><th>Movie Gen (Meta)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Backbone</strong></td><td>DiT (spacetime patches)</td><td>Hierarchical (12B keyframe + 28B interp)</td><td>DiT (full 3D attention)</td><td>LLaMA-DiT (decoder-only)</td></tr>
+        <tr><td><strong>VAE</strong></td><td>Spatiotemporal (undisclosed)</td><td>Dual VAE (video + audio)</td><td>3D Causal VAE (4&times;8&times;8)</td><td>TAE (8&times;8&times;8)</td></tr>
+        <tr><td><strong>Text Encoder</strong></td><td>Recaptioner (DALL-E 3)</td><td>Gemini-based</td><td>T5-XXL / umT5</td><td>UL2 + MetaCLIP + ByT5</td></tr>
+        <tr><td><strong>Key Innovation</strong></td><td>Variable-res patches</td><td>Joint audio-video diffusion</td><td>Open-source; massive scale</td><td>LLM as gen backbone</td></tr>
+        <tr><td><strong>Audio</strong></td><td>No</td><td>Yes (native)</td><td>No (separate V2A)</td><td>Yes (separate 13B)</td></tr>
+        <tr><td><strong>Open-Source</strong></td><td>No</td><td>No</td><td>Yes (Wan, HunyuanVideo, CogVideoX)</td><td>No (weights unreleased)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout callout-info">
+    <div class="callout-icon">&#128205;</div>
+    <div class="callout-body">
+      <h4>The Open-Source Advantage</h4>
+      <p>Chinese labs (Alibaba, Tencent, Zhipu AI, ByteDance) have released the <strong>majority of open-source video models</strong> in 2024&ndash;2025. Wan 2.1 (14B), HunyuanVideo (13B), CogVideoX (5B), and Goku (8B) are all fully open. This contrasts sharply with Sora, Veo, and Movie Gen which remain closed. Open-Sora 2.0 demonstrated that even a $200K budget can produce competitive results, further democratizing the field.</p>
     </div>
   </div>
 
