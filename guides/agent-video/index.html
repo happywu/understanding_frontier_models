@@ -52,6 +52,7 @@
     <li><span class="nav-group-label">Applications</span></li>
     <li><a href="#applications" class="nav-link" data-section="applications">Emerging Applications</a></li>
     <li><a href="#commercial" class="nav-link" data-section="commercial">Commercial Landscape</a></li>
+    <li><a href="#architecture" class="nav-link" data-section="architecture">Under the Hood</a></li>
     <li><a href="#challenges" class="nav-link" data-section="challenges">Challenges &amp; Future</a></li>
     <li><a href="#references" class="nav-link" data-section="references">References</a></li>
   </ul>
@@ -3394,6 +3395,541 @@
       <h4>Key Market Trend</h4>
       <p>The market is rapidly consolidating around platforms that offer <strong>multi-model orchestration</strong> and <strong>agentic workflows</strong> rather than single-capability tools. The winners are those that can coordinate multiple AI capabilities &mdash; generation, editing, avatar, voice, music &mdash; into seamless end-to-end production pipelines. Single-model tools increasingly become components consumed by orchestration layers, not standalone products. This mirrors the broader AI industry&rsquo;s shift from individual model capabilities to system-level composition.</p>
       <p style="margin-top:0.5rem;">The US&ndash;China dynamic is particularly notable: Chinese platforms (Kling, Hailuo, Vidu, Seedance) are competing aggressively on price and features, with Kling&rsquo;s API at $0.07&ndash;$0.14/sec vs. Google Veo at $0.35&ndash;$0.50/sec. MiniMax&rsquo;s Hong Kong IPO signals the maturation of the Chinese AI video ecosystem as a credible alternative to Silicon Valley.</p>
+    </div>
+  </div>
+  </section>
+
+  <!-- ======== UNDER THE HOOD ======== -->
+  <section id="architecture" class="page">
+<div class="section-hero">
+    <h1>Under the Hood: Building Video Orchestration Systems</h1>
+    <p class="hero-sub">Commercial agentic video platforms like TapNow, Pencil, and HeyGen look magical from the outside &mdash; but inside they follow well-understood engineering patterns. This section dissects the three-layer industry stack, reveals who actually trains models versus who wraps APIs, compares agent architectures across platforms, and provides a concrete blueprint for building your own orchestration system from open-source components.</p>
+    <div class="hero-badges">
+      <span class="badge badge-orange">System Architecture</span>
+      <span class="badge badge-violet">Multi-Model Orchestration</span>
+      <span class="badge badge-blue">DAG Execution</span>
+      <span class="badge badge-emerald">Open-Source Equivalents</span>
+      <span class="badge badge-amber">Build vs. Buy</span>
+    </div>
+  </div>
+
+  <!-- ======== 1. THE THREE-LAYER STACK ======== -->
+  <h2>The Three-Layer Industry Stack</h2>
+  <p>The video AI industry has converged on a <strong>three-layer architecture</strong> that mirrors classic platform economics. Understanding where each company sits in this stack reveals what is genuinely proprietary, what is a thin wrapper, and where long-term value accrues.</p>
+
+  <div class="train-stage" data-color="orange">
+    <div class="stage-header">Layer 1 &mdash; Foundation Model Providers</div>
+    <div class="stage-body">
+      <p><strong>These companies train the actual video generation models.</strong> They invest hundreds of millions to billions in compute, data, and research. This layer captures the most value because models are extremely expensive to replicate.</p>
+      <div class="mini-card-grid" style="margin-top:0.75rem;">
+        <div class="mini-card">
+          <h4>Runway</h4>
+          <p>Gen-4, Gen-4.5. $5.3B valuation. Research-first company (est. 2018, ~120 employees). Also offers Workflows for orchestration.</p>
+        </div>
+        <div class="mini-card">
+          <h4>Google Veo</h4>
+          <p>Veo 3, Veo 3.1. Integrated into Gemini and Flow app. Commercially safe, licensed training data.</p>
+        </div>
+        <div class="mini-card">
+          <h4>OpenAI Sora</h4>
+          <p>Sora 2 (Sep 2026). 25-second clips. $1B Disney partnership. $300B+ parent valuation.</p>
+        </div>
+        <div class="mini-card">
+          <h4>Stability AI</h4>
+          <p>Open-weight Stable Video Diffusion models. Enables the open-source ecosystem.</p>
+        </div>
+        <div class="mini-card">
+          <h4>Alibaba (Wan)</h4>
+          <p>Wan 2.1/2.2. 14B and 1.3B parameter models. Open-weight. Powers much of ComfyUI&rsquo;s video ecosystem.</p>
+        </div>
+        <div class="mini-card">
+          <h4>Adobe Firefly</h4>
+          <p>Firefly Video Model. Trained exclusively on licensed content. Integrated into Premiere Pro.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="train-stage" data-color="amber">
+    <div class="stage-header">Layer 2 &mdash; Orchestration / Platform Layer</div>
+    <div class="stage-body">
+      <p><strong>These companies chain multiple foundation models into workflows.</strong> They do not train their own models. Their value comes from UX, workflow logic, prompt engineering, and domain-specific templates. This layer has the <em>thinnest</em> moat.</p>
+      <div class="mini-card-grid" style="margin-top:0.75rem;">
+        <div class="mini-card">
+          <h4>TapNow</h4>
+          <p>Tapflow visual DAG editor. Integrates Midjourney, Imagen, Runway, TopazLabs, GPT, VEO 3.1. Points-based pricing.</p>
+        </div>
+        <div class="mini-card">
+          <h4>Pencil (Brandtech)</h4>
+          <p>Agent-based orchestration with brand-safety guardrails. Chat-based agent chaining. Integrates Google Veo 2 + various LLMs.</p>
+        </div>
+        <div class="mini-card">
+          <h4>ComfyUI</h4>
+          <p>Open-source node-based workflow engine. JSON DAG storage. Self-hostable. Closest open equivalent to Tapflow.</p>
+        </div>
+        <div class="mini-card">
+          <h4>Shotstack</h4>
+          <p>Cloud video editing API with REST/JSON architecture. Programmatic orchestration of video AI services.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="train-stage" data-color="emerald">
+    <div class="stage-header">Layer 3 &mdash; Application Layer (Specialized AI + Purpose-Built UX)</div>
+    <div class="stage-body">
+      <p><strong>These companies train specialized models for specific use cases</strong> and wrap them in purpose-built user experiences. They often integrate third-party foundation models for capabilities outside their core competency. This layer captures high value because domain expertise + proprietary models create strong defensibility.</p>
+      <div class="mini-card-grid" style="margin-top:0.75rem;">
+        <div class="mini-card">
+          <h4>HeyGen</h4>
+          <p>Proprietary 1.4B-param A-roll model + Avatar IV for realistic avatars. Integrates Sora 2 + Veo 3 for B-roll. $95M ARR.</p>
+        </div>
+        <div class="mini-card">
+          <h4>OpusClip</h4>
+          <p>Proprietary ClipAnything multimodal model + Virality Score trained on millions of viral videos. Third-party for generative video.</p>
+        </div>
+        <div class="mini-card">
+          <h4>Synthesia</h4>
+          <p>Proprietary avatar generation. 240+ avatars, 160+ languages. $4B valuation. 90% of Fortune 100 as customers.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-icon">&#9888;</div>
+    <div class="callout-body">
+      <h4>Where Value Accrues</h4>
+      <p>Most value flows to <strong>Layer 1</strong> (foundation models are expensive to replicate &mdash; Runway has raised $860M+ in funding) and <strong>Layer 3</strong> (specialized models + domain UX create strong lock-in &mdash; HeyGen&rsquo;s avatar model took years to train). <strong>Layer 2 orchestration is the most vulnerable</strong>: foundation model providers are adding their own workflow features (Runway Workflows launched October 2025), application tools are adding multi-model support (HeyGen now integrates Sora 2 + Veo 3), and open-source tools like ComfyUI keep getting more accessible. If you are building at Layer 2, speed of integration and domain-specific templates are your only real defensibility.</p>
+    </div>
+  </div>
+
+  <!-- ======== 2. ANATOMY OF AN ORCHESTRATION PLATFORM ======== -->
+  <h2>Anatomy of an Orchestration Platform</h2>
+  <p>What actually happens when a user creates a video on TapNow? The pipeline below reconstructs the full execution flow based on public documentation, pricing analysis, and feature descriptions. This same general pattern applies to any multi-model video orchestration system.</p>
+
+  <div class="train-stage" data-color="blue">
+    <div class="stage-header">Step 1 &mdash; User Input</div>
+    <div class="stage-body">
+      <p>The user provides a text prompt, script, product photos, or sketches and arranges them on Tapflow&rsquo;s infinite canvas. The canvas is a node-based DAG editor (conceptually similar to ComfyUI or n8n) where each node represents a processing step. Users connect nodes with edges to define data flow.</p>
+      <p style="font-size:0.85rem;color:var(--fg-muted);margin-top:0.5rem;"><strong>Likely tech stack:</strong> React + a node-editing library (likely React Flow / xyflow). Features include infinite zoom/pan, drag-and-drop connections, multi-selection, batch operations, and real-time preview. A related open-source project ("Tapnow Studio" on GitHub) confirms React + Tailwind CSS + Vite with React.memo optimizations and requestAnimationFrame throttling.</p>
+    </div>
+  </div>
+
+  <div class="train-stage" data-color="orange">
+    <div class="stage-header">Step 2 &mdash; LLM Scene Breakdown</div>
+    <div class="stage-body">
+      <p>GPT (or a similar LLM) interprets the user&rsquo;s script or scene descriptions and generates a <strong>structured scene breakdown</strong>: scene-by-scene descriptions, actions, dialogue, camera directions. Prompt engineering templates are applied per-model to translate the user&rsquo;s creative intent into model-optimized prompts. This is where TapNow&rsquo;s proprietary prompt templates add value &mdash; each integrated model (Midjourney, Imagen, Runway, VEO 3.1) has different prompt syntax and responds best to different phrasing patterns.</p>
+    </div>
+  </div>
+
+  <div class="train-stage" data-color="violet">
+    <div class="stage-header">Step 3 &mdash; Image Generation (Multi-Model)</div>
+    <div class="stage-body">
+      <p>Scene descriptions are routed to image generation models &mdash; <strong>Midjourney, Imagen, or Nano Banana</strong> &mdash; to produce storyboard images for each scene. The user can regenerate, adjust, or manually override any image. This is the first <strong>human-in-the-loop checkpoint</strong>: the pipeline pauses for approval before committing compute to video generation.</p>
+    </div>
+  </div>
+
+  <div class="train-stage" data-color="emerald">
+    <div class="stage-header">Step 4 &mdash; Video Generation (Multi-Model)</div>
+    <div class="stage-body">
+      <p>Approved storyboard images plus refined prompts are sent to video generation models &mdash; <strong>Runway or VEO 3.1</strong>. This is image-to-video conversion for each scene, with support for scene fusion, video continuation, and first/last frame settings (VEO 3.1). Video generation is asynchronous: each scene takes 30 seconds to several minutes. The platform manages job queues, polls for completion, and handles retries.</p>
+    </div>
+  </div>
+
+  <div class="train-stage" data-color="amber">
+    <div class="stage-header">Step 5 &mdash; Post-Processing &amp; Output</div>
+    <div class="stage-body">
+      <p><strong>TopazLabs</strong> handles upscaling and enhancement. Sound and music generation are available (1,000 generations included in paid plans). One-click graphic design generates banners and ads. The final output is exported in multiple formats. TapNow&rsquo;s pricing &mdash; ~10 points per video, ~2.25 points per image &mdash; is roughly consistent with pass-through API costs for Runway ($0.05&ndash;$0.50/second) and Midjourney (~$0.01&ndash;$0.10/image), confirming the pure-wrapper economics.</p>
+    </div>
+  </div>
+
+  <pre><code>Full Pipeline Architecture (Simplified)
+=========================================
+
+User Input          LLM Planner         Image Gen           Video Gen          Post-Process
++-----------+      +------------+      +-------------+     +-------------+    +------------+
+| Text      |      | GPT / LLM  |      | Midjourney  |     | Runway      |    | TopazLabs  |
+| Script    | ---> | Scene      | ---> | Imagen      | --> | VEO 3.1     | -> | Upscaling  |
+| Photos    |      | Breakdown  |      | Nano Banana |     | (async jobs)|    | Audio Gen  |
+| Sketches  |      | Prompt Eng |      |             |     |             |    | Export     |
++-----------+      +------------+      +------+------+     +------+------+    +------------+
+                                              |                   |
+                                        [Human Review]      [Human Review]
+                                        Approve/Reject      Approve/Reject
+                                        Regenerate          Regenerate
+
+Execution: DAG topological sort -> async job queue -> webhook/polling -> state persistence
+Storage:   S3 (assets) + PostgreSQL (metadata/lineage) + Redis (job state) + CDN (delivery)</code></pre>
+
+  <div class="callout callout-info">
+    <div class="callout-icon">&#128161;</div>
+    <div class="callout-body">
+      <h4>The Proprietary Value Is Not Models</h4>
+      <p>TapNow does not train any models. There are no published technical papers, model cards, or training details. The proprietary value lies in four areas: (1) <strong>prompt engineering templates</strong> optimized per model, (2) <strong>workflow orchestration logic</strong> that chains models and manages intermediate assets, (3) <strong>UX/UI</strong> that makes multi-model pipelines accessible to non-technical users, and (4) <strong>domain-specific templates</strong> for e-commerce ads, TVCs, and commercial content. The points-based pricing ($90/year for ~150 videos) is consistent with a pass-through margin on API costs.</p>
+    </div>
+  </div>
+
+  <!-- ======== 3. WHO TRAINS MODELS VS. WHO WRAPS APIs ======== -->
+  <h2>Who Trains Models vs. Who Wraps APIs</h2>
+  <p>This is the most important question for evaluating any AI video company. The distinction between training proprietary models and wrapping third-party APIs determines defensibility, margins, technical risk, and long-term viability.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Trains Own Models?</th>
+          <th>What&rsquo;s Proprietary</th>
+          <th>What&rsquo;s Third-Party</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>TapNow</strong></td>
+          <td><span style="color:#ef4444;">No</span></td>
+          <td>Workflow engine (Tapflow), prompt templates, UX, e-commerce domain templates</td>
+          <td>Midjourney, Imagen, Runway, TopazLabs, GPT, Nano Banana, VEO 3.1</td>
+        </tr>
+        <tr>
+          <td><strong>Pencil (Brandtech)</strong></td>
+          <td><span style="color:#ef4444;">No</span></td>
+          <td>Agent orchestration layer, brand-safety guardrails, agent builder</td>
+          <td>Google Veo 2, various LLMs, third-party integrations (Salesforce, HubSpot, etc.)</td>
+        </tr>
+        <tr>
+          <td><strong>Runway</strong></td>
+          <td><span style="color:#22c55e;">Yes</span></td>
+          <td>Gen-4, Gen-4.5 video models, Workflows engine</td>
+          <td>N/A &mdash; they <em>are</em> the model provider ($860M+ in funding, ~120 researchers)</td>
+        </tr>
+        <tr>
+          <td><strong>HeyGen</strong></td>
+          <td><span style="color:#f59e0b;">Partially</span></td>
+          <td>1.4B-parameter A-roll model, Avatar IV, text-to-time translation layer</td>
+          <td>Sora 2 (OpenAI), Veo 3 (Google) for B-roll and non-avatar footage</td>
+        </tr>
+        <tr>
+          <td><strong>OpusClip</strong></td>
+          <td><span style="color:#f59e0b;">Partially</span></td>
+          <td>ClipAnything multimodal model, Virality Score algorithm, transformer models trained on millions of viral videos</td>
+          <td>Third-party models for generative video creation (Agent Opus)</td>
+        </tr>
+        <tr>
+          <td><strong>Adobe</strong></td>
+          <td><span style="color:#22c55e;">Yes</span></td>
+          <td>Firefly Video Model (trained exclusively on licensed content)</td>
+          <td>N/A &mdash; first-party models integrated into Premiere Pro</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <div class="callout-icon">&#128161;</div>
+    <div class="callout-body">
+      <h4>The Three-Tier Pattern</h4>
+      <p>A clear pattern emerges across the industry:</p>
+      <ul style="margin-top:0.5rem;font-size:0.9rem;">
+        <li><strong>Model labs</strong> (Runway, Adobe, Google, OpenAI) &mdash; train foundation models. Massive compute investment. Strongest moat.</li>
+        <li><strong>Application tools with core AI</strong> (HeyGen, OpusClip) &mdash; train specialized models for their core competency (avatars, clip detection) but integrate third-party models for everything else. Strong moat in their niche.</li>
+        <li><strong>Workflow orchestrators</strong> (TapNow, Pencil) &mdash; pure API wrappers with orchestration logic. No proprietary models. Weakest moat, highest replaceability.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ======== 4. AGENT ARCHITECTURES IN THE WILD ======== -->
+  <h2>Agent Architectures in the Wild</h2>
+  <p>Different platforms have adopted fundamentally different approaches to &ldquo;agentic&rdquo; video creation. The variation in architecture reflects different tradeoffs between user control, automation, and technical complexity.</p>
+
+  <div class="two-col">
+    <div class="train-stage" data-color="violet">
+      <div class="stage-header">Pencil &mdash; Chat-Based Agent Chaining</div>
+      <div class="stage-body">
+        <p><strong>Architecture:</strong> Conversational agents with <em>Instructions + Knowledge + Tools</em>. Closest analogy: <strong>LangChain / LangGraph</strong> agents.</p>
+        <ul style="margin-top:0.5rem;font-size:0.85rem;">
+          <li><strong>Agent types:</strong> Audience Persona, Consumer Insight, Campaign Idea, Ad Generation, Video Script</li>
+          <li><strong>Chaining:</strong> Multiple agents connected in a single fluid conversation. Context carries forward without copy-pasting</li>
+          <li><strong>Tools:</strong> Web search, URL visit, Text-to-Image, Image-to-Video, Video Cutdown, plus third-party integrations (Salesforce, Semrush, Slack, HubSpot, Google Drive)</li>
+          <li><strong>Custom agents:</strong> Agent Builder lets users define job, add skills/tools, and connect agents</li>
+        </ul>
+        <div class="stage-spec">Paradigm: Modular but connected &mdash; agents act like team members passing work along</div>
+      </div>
+    </div>
+    <div class="train-stage" data-color="orange">
+      <div class="stage-header">Runway Workflows &mdash; Node-Based DAG</div>
+      <div class="stage-body">
+        <p><strong>Architecture:</strong> Visual node-based pipeline. Closest analogy: <strong>ComfyUI</strong> for professionals.</p>
+        <ul style="margin-top:0.5rem;font-size:0.85rem;">
+          <li><strong>Input nodes:</strong> Accept manual text or media upload; cannot receive input from other nodes</li>
+          <li><strong>Media Model nodes:</strong> Process inputs through Gen-4, Gen-4.5, inpainting, upscaling, video effects</li>
+          <li><strong>LLM nodes:</strong> Dynamically generate or modify prompts; support system prompts via separate text input</li>
+          <li><strong>Media Utility nodes:</strong> Extract audio, resize, format conversion</li>
+          <li><strong>Execution:</strong> Entire pipeline runs as a single automated process</li>
+        </ul>
+        <div class="stage-spec">Paradigm: Deterministic pipeline &mdash; user defines exact execution path, no autonomous decisions</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="train-stage" data-color="blue">
+      <div class="stage-header">HeyGen Video Agent &mdash; Prompt-Native Engine</div>
+      <div class="stage-body">
+        <p><strong>Architecture:</strong> Single prompt in, complete video out, with interactive refinement. Closest analogy: <strong>ChatGPT-style</strong> with structured outputs.</p>
+        <ul style="margin-top:0.5rem;font-size:0.85rem;">
+          <li><strong>Input:</strong> A single creative prompt</li>
+          <li><strong>Planning:</strong> Autonomously generates script, avatar selection, scene composition, voiceover, pacing, captions</li>
+          <li><strong>Review:</strong> Presents a &ldquo;video plan&rdquo; for user approval</li>
+          <li><strong>Feedback:</strong> User provides chat-based feedback before final generation</li>
+          <li><strong>Multi-model:</strong> Avatar IV (proprietary) + Sora 2 + Veo 3 from one workspace</li>
+        </ul>
+        <div class="stage-spec">Paradigm: Autonomous with human-in-the-loop &mdash; AI makes all decisions, user steers via conversation</div>
+      </div>
+    </div>
+    <div class="train-stage" data-color="emerald">
+      <div class="stage-header">OpusClip Agent Opus &mdash; Multimodal Analysis Engine</div>
+      <div class="stage-body">
+        <p><strong>Architecture:</strong> Multimodal content analysis + autonomous creation pipeline. Closest analogy: <strong>Autonomous agent</strong> with domain-specific perception.</p>
+        <ul style="margin-top:0.5rem;font-size:0.85rem;">
+          <li><strong>Analysis:</strong> ClipAnything model analyzes visual cues, audio elements, tone, emotion, and sentiment</li>
+          <li><strong>Detection:</strong> Transformer models trained on millions of viral videos identify compelling moments</li>
+          <li><strong>Scoring:</strong> Proprietary Virality Score evaluates hook strength, emotion, engagement</li>
+          <li><strong>Creation:</strong> Autonomously segments, selects, polishes clips (animated captions, speaker centering)</li>
+          <li><strong>Automation:</strong> OpenClaw integration enables 24/7 autonomous pipelines &mdash; monitors trends, generates scripts, creates videos, publishes</li>
+        </ul>
+        <div class="stage-spec">Paradigm: Fully autonomous &mdash; minimal human intervention, optimized for volume and virality</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 5. OPEN-SOURCE EQUIVALENTS ======== -->
+  <h2>Open-Source Equivalents</h2>
+  <p>Every major component of a commercial orchestration platform has an open-source equivalent. The table below maps commercial features to open-source tools, then details the most important ones.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Open-Source Tool</th>
+          <th>Closest Commercial Equivalent</th>
+          <th>What It Replaces</th>
+          <th>Key Strength</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ComfyUI</strong></td>
+          <td>Tapflow (TapNow)</td>
+          <td>Visual DAG editor + video generation workflows</td>
+          <td>JSON workflow storage, supports Wan 2.1/2.2, AnimateDiff, LTX-Video. Self-hostable.</td>
+        </tr>
+        <tr>
+          <td><strong>n8n</strong></td>
+          <td>TapNow orchestration logic</td>
+          <td>Workflow automation with AI agent support</td>
+          <td>Visual DAG with native AI agents. Can call any API. Unlimited users/workflows on all plans.</td>
+        </tr>
+        <tr>
+          <td><strong>LangGraph</strong></td>
+          <td>Pencil&rsquo;s agent architecture</td>
+          <td>Stateful multi-agent orchestration</td>
+          <td>Code-first SDK. Supervisor pattern for coordinating specialized agents. Full state tracking.</td>
+        </tr>
+        <tr>
+          <td><strong>React Flow / xyflow</strong></td>
+          <td>Tapflow&rsquo;s node-based UI</td>
+          <td>The visual node editor component</td>
+          <td>Dominant React library for node-based UIs. MIT licensed. Likely what Tapflow itself uses.</td>
+        </tr>
+        <tr>
+          <td><strong>Runway MCP Server</strong></td>
+          <td>Runway API integration</td>
+          <td>Agent-based video generation via Model Context Protocol</td>
+          <td>Official GitHub repo. Enables Claude or any MCP-compatible assistant to generate videos.</td>
+        </tr>
+        <tr>
+          <td><strong>CrewAI</strong></td>
+          <td>Pencil&rsquo;s agent teams</td>
+          <td>Role-based multi-agent collaboration</td>
+          <td>Define agent roles, goals, and tools. Agents collaborate on complex tasks.</td>
+        </tr>
+        <tr>
+          <td><strong>OpenAI Agents SDK</strong></td>
+          <td>General agent orchestration</td>
+          <td>Multi-agent system framework</td>
+          <td>Official SDK for building multi-agent systems with tool use and handoffs.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Deep Dive: Key Open-Source Components</h3>
+
+  <div class="three-col">
+    <div class="mini-card">
+      <div class="mini-icon" style="color:#f97316">&#9881;</div>
+      <h4>ComfyUI</h4>
+      <p>The most technically comparable open-source system to Tapflow. Every workflow is a <strong>JSON DAG</strong> enabling serialization, programmatic editing, and versioning. Native support for Wan 2.1/2.2 (14B and 1.3B params), AnimateDiff, LTX-Video/LTX-2 (NVIDIA RTX acceleration), HunyuanVideo, RealESRGAN for super-resolution, and GIMM-VFI for frame interpolation. Can chain text-to-video, image-to-video, upscaling, and depth control in a single workflow. Extensible via Python custom nodes. Requires 12GB+ VRAM; high frame counts (81 frames) take 10&ndash;30 minutes.</p>
+    </div>
+    <div class="mini-card">
+      <div class="mini-icon" style="color:var(--violet)">&#129302;</div>
+      <h4>n8n</h4>
+      <p>Open-source visual workflow automation with <strong>native AI agent support</strong>. Agents use memory, goals, and tools for step-by-step reasoning. Can trigger video generation APIs (Runway, Luma, HeyGen) via HTTP nodes, process webhooks for async job completion, and chain results through conditional logic. Many teams pair <strong>n8n + LangGraph</strong>: LangGraph for complex agent logic, n8n for connecting agents to business tools and orchestrating end-to-end pipelines. Pricing restructured August 2025 &mdash; unlimited users, workflows, and steps on all plans.</p>
+    </div>
+    <div class="mini-card">
+      <div class="mini-icon" style="color:var(--blue)">&#128200;</div>
+      <h4>LangGraph</h4>
+      <p>Code-first SDK for building <strong>stateful, multi-agent applications as graphs</strong>. Nodes are agents/tools, edges are information flow, and cycles are supported (agents can pass info back and forth). The <strong>supervisor pattern</strong> &mdash; a supervisor agent coordinating multiple specialists, each with their own scratchpad &mdash; maps directly to how Pencil&rsquo;s agent architecture works. Could orchestrate a pipeline where one agent handles scripting, another image generation, another video generation, with a supervisor managing flow.</p>
+    </div>
+  </div>
+
+  <!-- ======== 6. BUILD VS. BUY ======== -->
+  <h2>Build vs. Buy: Constructing a TapNow-Like System</h2>
+  <p>If you wanted to build a multi-model video orchestration platform from scratch, here is the full architecture and realistic effort estimate. This is based on the technical patterns observed across TapNow, Pencil, Runway Workflows, and their open-source equivalents.</p>
+
+  <h3>Reference Architecture</h3>
+  <pre><code>┌─────────────────────────────────────────────────────────────────────────┐
+│                           FRONTEND                                     │
+│  React + React Flow (node editor)                                      │
+│  Infinite canvas with zoom/pan    Real-time preview panels             │
+│  Asset gallery/library            Template marketplace                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│                        API LAYER (REST + WebSocket)                     │
+│  Node.js or Python API server     WebSocket for real-time status       │
+│  Auth / JWT / Teams               Rate limiting + cost tracking        │
+├──────────────────┬────────────────────────────┬─────────────────────────┤
+│   JOB QUEUE      │     EXECUTION ENGINE       │    AI INTEGRATION      │
+│  Redis / Bull    │  DAG parser + validator     │  Unified model iface   │
+│  Async workers   │  Topological sort executor  │  (adapter pattern)     │
+│  Webhook recv    │  State persistence          │  Per-model prompt fmt  │
+│  Retry logic     │  Resume interrupted flows   │  Response normalizer   │
+├──────────────────┴────────────────────────────┴─────────────────────────┤
+│                          STORAGE                                        │
+│  PostgreSQL (metadata, lineage, user state, workflow definitions)       │
+│  S3 / GCS (generated images, video clips, audio, intermediate assets)  │
+│  Redis (job state, caching)       CDN (delivery to end users)          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                     EXTERNAL AI SERVICES                                │
+│  Midjourney API   Runway API    Google Imagen/Veo    OpenAI GPT        │
+│  Stability API    TopazLabs     Luma API             ElevenLabs        │
+│                   (via REST, MCP, or gateway services)                  │
+└─────────────────────────────────────────────────────────────────────────┘</code></pre>
+
+  <h3>Build Effort Estimate</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Complexity</th>
+          <th>Estimated Time (Small Team)</th>
+          <th>Key Challenge</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Visual node editor</strong> (React Flow)</td>
+          <td><span class="badge badge-amber">Medium</span></td>
+          <td>4&ndash;6 weeks</td>
+          <td>Custom node types, edge validation, canvas performance at scale</td>
+        </tr>
+        <tr>
+          <td><strong>DAG execution engine</strong></td>
+          <td><span class="badge badge-orange">High</span></td>
+          <td>6&ndash;8 weeks</td>
+          <td>Topological ordering, async execution, error handling, state persistence, resume</td>
+        </tr>
+        <tr>
+          <td><strong>API integrations</strong> (3&ndash;5 models)</td>
+          <td><span class="badge badge-amber">Medium</span></td>
+          <td>4&ndash;6 weeks</td>
+          <td>Each API has different auth, rate limits, pricing, response formats; all video APIs are async</td>
+        </tr>
+        <tr>
+          <td><strong>Prompt template system</strong></td>
+          <td><span class="badge badge-emerald">Low&ndash;Med</span></td>
+          <td>2&ndash;3 weeks</td>
+          <td>Model-specific prompt formatting, LLM-based prompt rewriting, template versioning</td>
+        </tr>
+        <tr>
+          <td><strong>Asset management</strong></td>
+          <td><span class="badge badge-amber">Medium</span></td>
+          <td>3&ndash;4 weeks</td>
+          <td>Versioning, lineage tracking, cleanup policies, thumbnail generation, large file handling</td>
+        </tr>
+        <tr>
+          <td><strong>Human-in-the-loop</strong> / review gates</td>
+          <td><span class="badge badge-amber">Medium</span></td>
+          <td>3&ndash;4 weeks</td>
+          <td>Approval gates in DAG, feedback loops, A/B comparison UI, brand-safety checks</td>
+        </tr>
+        <tr>
+          <td><strong>Auth, billing, multi-tenancy</strong></td>
+          <td><span class="badge badge-amber">Medium</span></td>
+          <td>4&ndash;6 weeks</td>
+          <td>Per-user credit tracking, usage metering, team permissions, Stripe integration</td>
+        </tr>
+        <tr style="font-weight:bold;">
+          <td>Total MVP</td>
+          <td><span class="badge badge-orange">High</span></td>
+          <td>~6&ndash;8 months</td>
+          <td>Full-time team of 3&ndash;5 engineers</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <div class="callout-icon" style="color:#22c55e;">&#9889;</div>
+    <div class="callout-body">
+      <h4>The Practical Shortcut: 80% of TapNow in 80% Less Time</h4>
+      <p>You do not need to build everything from scratch. A hybrid approach using existing open-source components can get you to ~80% of TapNow&rsquo;s functionality with dramatically less engineering:</p>
+      <ol style="margin-top:0.5rem;font-size:0.9rem;">
+        <li><strong>Start with n8n or ComfyUI</strong> as the workflow engine backbone (skip building a DAG executor entirely)</li>
+        <li><strong>Add React Flow</strong> for a custom visual editor if n8n/ComfyUI&rsquo;s default UI is insufficient</li>
+        <li><strong>Integrate via MCP</strong> where available &mdash; Runway and Luma already have official MCP servers on GitHub</li>
+        <li><strong>Use LangGraph</strong> for the agent logic layer (script analysis, scene breakdown, prompt optimization)</li>
+        <li><strong>Add Shotstack</strong> for video post-processing and format conversion via a unified REST API</li>
+        <li><strong>Build domain-specific prompt templates</strong> for your target vertical (e-commerce, social media, training, etc.)</li>
+      </ol>
+      <p style="margin-top:0.5rem;">This reduces the build from <strong>6&ndash;8 months</strong> to roughly <strong>6&ndash;10 weeks</strong> for an experienced team, at the cost of less UI control and tighter coupling to upstream projects.</p>
+    </div>
+  </div>
+
+  <!-- ======== 7. THE MOAT PROBLEM ======== -->
+  <h2>The Moat Problem</h2>
+  <p>Orchestration-layer companies face a structural challenge: the layers above and below them are actively squeezing their value proposition. This is not theoretical &mdash; it is already happening.</p>
+
+  <div class="problem-grid">
+    <div class="problem-card" data-severity="high">
+      <h3>Foundation Models Adding Workflows</h3>
+      <p style="font-size:0.85rem;">Runway launched Workflows in October 2025 &mdash; a full node-based pipeline builder using their own models. Why would users pay a middleman for Runway access when Runway itself offers orchestration? Google&rsquo;s Flow app and Adobe&rsquo;s Firefly Boards follow the same pattern. <strong>The model providers are moving up the stack.</strong></p>
+    </div>
+    <div class="problem-card" data-severity="high">
+      <h3>Application Tools Adding Multi-Model</h3>
+      <p style="font-size:0.85rem;">HeyGen now integrates Sora 2 and Veo 3 alongside its proprietary avatar models. OpusClip&rsquo;s Agent Opus sources from multiple services. Application-layer companies are building their own orchestration, eliminating the need for a separate Layer 2 platform. <strong>The applications are moving down the stack.</strong></p>
+    </div>
+    <div class="problem-card" data-severity="medium">
+      <h3>Open Source Getting Friendlier</h3>
+      <p style="font-size:0.85rem;">ComfyUI&rsquo;s ecosystem now supports production-ready video workflows with Wan 2.1/2.2, LTX-Video, and AnimateDiff. NVIDIA is investing in RTX-accelerated local generation. n8n added native AI agent support. The open-source tooling is rapidly closing the UX gap that justified commercial orchestrators.</p>
+    </div>
+    <div class="problem-card" data-severity="medium">
+      <h3>MCP Enabling Universal Integration</h3>
+      <p style="font-size:0.85rem;">Anthropic&rsquo;s Model Context Protocol (MCP) is creating a standardized way for any agent to call any AI service. Runway&rsquo;s official MCP server (GitHub, June 2025) means Claude or any MCP-compatible assistant can generate videos directly. As more providers ship MCP servers, the &ldquo;unified API&rdquo; value proposition of orchestrators erodes.</p>
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-icon">&#9888;</div>
+    <div class="callout-body">
+      <h4>What Remains Defensible</h4>
+      <p>For orchestration-layer companies like TapNow, only two sources of defensibility hold up under pressure:</p>
+      <ul style="margin-top:0.5rem;font-size:0.9rem;">
+        <li><strong>Speed of integration.</strong> Being the first platform to integrate new models (TapNow was early with VEO 3.1) creates a temporary window of exclusive access. But this advantage is measured in weeks, not years.</li>
+        <li><strong>Domain-specific templates and workflows.</strong> Deep expertise in a vertical &mdash; e-commerce ad formats, social media templates, TVC production workflows &mdash; creates value that is harder to replicate because it requires domain knowledge, not just engineering. TapNow&rsquo;s TapTV community for sharing workflows is an attempt to build network effects here.</li>
+      </ul>
+      <p style="margin-top:0.5rem;">The long-term strategic play for Layer 2 companies is to <strong>move toward Layer 3</strong> &mdash; develop proprietary AI capabilities for their specific domain rather than remaining pure API wrappers. The companies that stay as pure orchestrators risk being commoditized from both above and below.</p>
     </div>
   </div>
   </section>
